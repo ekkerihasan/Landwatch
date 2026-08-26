@@ -1,0 +1,52 @@
+[
+  {
+    "project_id": 1,
+    "name": "NH-44 Nagpur Bypass — Package III",
+    "location": "Nagpur, Maharashtra",
+    "sector": "National Highway",
+    "area": 142.5,
+    "paf_count": 312,
+    "current_stage": "3D",
+    "created_at": "2024-02-15T08:30:00Z"
+  },
+  {
+    "project_id": 2,
+    "name": "NH-19 Varanasi Ring Road — Phase 2",
+    "location": "Varanasi, Uttar Pradesh",
+    "sector": "National Highway",
+    "area": 89.3,
+    "paf_count": 187,
+    "current_stage": "3A",
+    "created_at": "2024-06-10T10:00:00Z"
+  },
+  {
+    "project_id": 3,
+    "name": "NH-48 Rajmarg Extension — Surat Corridor",
+    "location": "Surat, Gujarat",
+    "sector": "National Highway",
+    "area": 210.0,
+    "paf_count": 445,
+    "current_stage": "3G",
+    "created_at": "2023-11-03T09:15:00Z"
+  },
+  {
+    "project_id": 4,
+    "name": "NH-16 Vijayawada Eastern Bypass",
+    "location": "Vijayawada, Andhra Pradesh",
+    "sector": "National Highway",
+    "area": 67.8,
+    "paf_count": 98,
+    "current_stage": "3C",
+    "created_at": "2024-08-22T07:45:00Z"
+  },
+  {
+    "project_id": 5,
+    "name": "NH-27 Gorakhpur–Ayodhya Link — Section B",
+    "location": "Ayodhya, Uttar Pradesh",
+    "sector": "National Highway",
+    "area": 155.2,
+    "paf_count": 276,
+    "current_stage": "3H",
+    "created_at": "2023-12-18T11:20:00Z"
+  }
+]
