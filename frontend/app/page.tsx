@@ -1,39 +1,28 @@
 import Link from "next/link";
-import { HighwayScene } from "@/components/HighwayScene";
-
-const STAGES = [
-  { code: "3A", label: "Notification" },
-  { code: "3C", label: "Declaration" },
-  { code: "3D", label: "Land vests" },
-  { code: "3G", label: "Compensation set" },
-  { code: "3H", label: "Deposited" },
-  { code: "3E", label: "Possession" },
-];
+import { PhotoFrame } from "@/components/PhotoFrame";
+import { IMAGES } from "@/lib/assets";
+import { STAGE_LABELS, STAGE_SEQUENCE } from "@/lib/stages";
 
 const CAPABILITIES = [
   {
     n: "01",
     title: "Rank the caseload",
-    body: "Every project scored Low to Critical, hardest-hit first, so limited attention goes where it changes an outcome.",
-    accent: "text-amber-400",
+    body: "Every project scored Low to Critical, worst first, so limited attention goes where it changes an outcome.",
   },
   {
     n: "02",
     title: "Show the reasoning",
     body: "No score appears without the factors behind it — compensation stalled, litigation open, a stage past its statutory duration.",
-    accent: "text-teal-300",
   },
   {
     n: "03",
     title: "Recommend the response",
     body: "Each condition maps to an owned action: verify compensation, escalate to the legal cell, convene a district review.",
-    accent: "text-amber-400",
   },
   {
     n: "04",
     title: "Test it before committing",
     body: "Move compensation or clear a case in the simulator and watch the score respond, before spending anything in the field.",
-    accent: "text-teal-300",
   },
 ];
 
@@ -48,7 +37,7 @@ const DISCLAIMERS = [
   },
   {
     head: "It does not predict dates.",
-    body: "The output is a risk band and a probability, never a completion date or an exact number of days late.",
+    body: "The output is a risk band and a range of days, never a completion date or an exact figure.",
   },
   {
     head: "It does not act.",
@@ -60,109 +49,88 @@ export default function LandingPage() {
   return (
     <main>
       {/* ---------- Hero ---------- */}
-      <section className="lw-hero lw-grain relative overflow-hidden">
-        {/* ambient glow, drifting slowly behind everything */}
-        <div
-          className="lw-drift pointer-events-none absolute -left-40 top-0 h-[34rem] w-[34rem] rounded-full opacity-40 blur-3xl"
-          style={{ background: "radial-gradient(circle, rgba(45,212,191,.28), transparent 70%)" }}
-          aria-hidden
-        />
-        <div className="lw-grid absolute inset-0 opacity-60" aria-hidden />
-
-        <div className="relative mx-auto max-w-6xl px-6 pb-72 pt-20 sm:pt-28">
-          <p className="lw-rise lw-d1 font-mono text-[11px] uppercase tracking-[0.22em] text-amber-400/90">
-            SIH26017 · Ministry of Road Transport &amp; Highways
+      <PhotoFrame slot={IMAGES.landingHero} drawnScale="h-80">
+        <div className="mx-auto max-w-7xl px-6 py-20 sm:py-28">
+          <p className="lw-rise lw-d1 font-mono text-[10px] uppercase tracking-[0.2em] text-white/60">
+            SIH26017 · Ministry of Road Transport &amp; Highways · Prototype
           </p>
-
-          <h1 className="mt-6 max-w-3xl text-4xl font-bold leading-[1.06] tracking-tight text-white sm:text-6xl">
-            <span className="lw-rise lw-d2 block">Land acquisition delays</span>
-            <span className="lw-rise lw-d3 block">are visible long before</span>
-            <span className="lw-rise lw-d4 block">
-              they become <span className="text-amber-400">official</span>.
-            </span>
+          <h1 className="lw-rise lw-d2 mt-5 max-w-3xl text-4xl font-bold leading-[1.08] tracking-tight text-white sm:text-5xl">
+            Land acquisition delays are visible long before they become official.
           </h1>
-
-          <p className="lw-rise lw-d5 mt-7 max-w-xl text-lg leading-relaxed text-slate-300">
+          <p className="lw-rise lw-d3 mt-5 max-w-xl text-base leading-relaxed text-white/75">
             Existing systems record where a project stands today. LANDWATCH reads the same
             process data and estimates where it is heading — early enough for an officer to
             act, with the reasoning shown every time.
           </p>
-
-          <div className="lw-rise lw-d6 mt-9 flex flex-wrap items-center gap-3">
+          <div className="lw-rise lw-d4 mt-8 flex flex-wrap gap-3">
             <Link
               href="/dashboard"
-              className="rounded-md bg-amber-400 px-6 py-3 text-sm font-bold text-slate-900 shadow-lg shadow-amber-500/20 transition-all hover:-translate-y-0.5 hover:bg-amber-300"
+              className="rounded bg-cream-surface px-6 py-3 text-sm font-bold text-forest-800 transition-colors hover:bg-white"
             >
-              Open the risk dashboard
+              Open the monitoring dashboard
             </Link>
             <Link
               href="/projects/new"
-              className="rounded-md border border-slate-500/60 px-6 py-3 text-sm font-semibold text-slate-100 backdrop-blur transition-colors hover:border-slate-300 hover:bg-white/5"
+              className="rounded border border-white/30 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10"
             >
-              Assess a site on the map
+              Assess a site
             </Link>
           </div>
-        </div>
 
-        {/* the corridor itself */}
-        <HighwayScene className="pointer-events-none absolute inset-x-0 bottom-0 h-72 w-full" />
-
-        {/* statutory sequence, riding along the road */}
-        <div className="relative mx-auto max-w-6xl px-6 pb-10">
-          <div className="flex flex-wrap items-center gap-x-1.5 gap-y-3">
-            <span className="mr-2 font-mono text-[10px] uppercase tracking-[0.18em] text-slate-400">
-              Tracked across
-            </span>
-            {STAGES.map((s, i) => (
-              <span key={s.code} className={`lw-fade lw-d${Math.min(i + 1, 6)} flex items-center gap-1.5`}>
-                <span
-                  className="rounded border border-white/10 bg-white/5 px-2 py-1 font-mono text-[11px] font-semibold text-slate-200 backdrop-blur"
-                  title={s.label}
-                >
-                  {s.code}
-                </span>
-                {i < STAGES.length - 1 && (
-                  <span className="text-slate-600" aria-hidden>
-                    →
+          {/* Statutory sequence */}
+          <div className="lw-rise lw-d4 mt-14 border-t border-white/10 pt-7">
+            <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.16em] text-white/45">
+              Tracked across the statutory sequence
+            </p>
+            <div className="flex flex-wrap items-center gap-x-1.5 gap-y-2">
+              {STAGE_SEQUENCE.map((stage, i) => (
+                <span key={stage} className="flex items-center gap-1.5">
+                  <span
+                    className="rounded border border-white/10 bg-white/5 px-2 py-1 font-mono text-[11px] font-semibold text-white/85"
+                    title={STAGE_LABELS[stage]}
+                  >
+                    {stage}
                   </span>
-                )}
-              </span>
-            ))}
+                  {i < STAGE_SEQUENCE.length - 1 && (
+                    <span className="text-white/25" aria-hidden>
+                      →
+                    </span>
+                  )}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
-      </section>
+      </PhotoFrame>
 
       {/* ---------- The distinction ---------- */}
-      <section className="lw-paper border-y border-slate-200">
-        <div className="mx-auto max-w-6xl px-6 py-20">
-          <div className="grid gap-6 md:grid-cols-2">
-            <div className="rounded-xl border border-slate-200 bg-white/70 p-7 backdrop-blur">
-              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-slate-400">
+      <section className="lw-paper border-y border-line">
+        <div className="mx-auto max-w-7xl px-6 py-16">
+          <div className="grid gap-5 md:grid-cols-2">
+            <div className="rounded-card border border-line bg-cream-surface p-7">
+              <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">
                 A system of record answers
               </p>
-              <p className="mt-4 text-2xl font-semibold tracking-tight text-slate-900">
+              <p className="mt-4 text-xl font-semibold tracking-tight text-ink">
                 &ldquo;Where is this project now?&rdquo;
               </p>
-              <p className="mt-3 text-sm leading-relaxed text-slate-600">
-                Notifications issued, payments released, current stage. Accurate, necessary, and
-                entirely retrospective — by the time a delay appears here, it has already happened.
+              <p className="mt-3 text-sm leading-relaxed text-ink-2">
+                Notifications issued, payments released, current stage. Accurate, necessary,
+                and entirely retrospective — by the time a delay appears here, it has already
+                happened.
               </p>
             </div>
 
-            <div className="relative overflow-hidden rounded-xl border-2 border-slate-900 bg-white p-7">
-              <span
-                className="absolute right-0 top-0 h-24 w-24 -translate-y-8 translate-x-8 rounded-full bg-amber-400/20 blur-2xl"
-                aria-hidden
-              />
-              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-amber-600">
+            <div className="relative overflow-hidden rounded-card border-2 border-forest-800 bg-cream-surface p-7">
+              <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-forest-600">
                 LANDWATCH answers
               </p>
-              <p className="mt-4 text-2xl font-semibold tracking-tight text-slate-900">
+              <p className="mt-4 text-xl font-semibold tracking-tight text-ink">
                 &ldquo;Which of these will slip, and why?&rdquo;
               </p>
-              <p className="mt-3 text-sm leading-relaxed text-slate-600">
-                A ranked caseload, the factors behind every flag, an owned action for each, and a
-                simulator for testing an intervention before committing to it.
+              <p className="mt-3 text-sm leading-relaxed text-ink-2">
+                A ranked caseload, the factors behind every flag, an owned action for each,
+                and a simulator for testing an intervention before committing to it.
               </p>
             </div>
           </div>
@@ -170,19 +138,19 @@ export default function LandingPage() {
       </section>
 
       {/* ---------- Capabilities ---------- */}
-      <section className="relative overflow-hidden bg-[#0b1220]">
-        <div className="lw-grid absolute inset-0 opacity-40" aria-hidden />
-        <div className="relative mx-auto max-w-6xl px-6 py-20">
-          <h2 className="max-w-lg text-2xl font-bold tracking-tight text-white sm:text-3xl">
+      <section className="bg-cream">
+        <div className="mx-auto max-w-7xl px-6 py-16">
+          <h2 className="max-w-lg text-2xl font-bold tracking-tight text-ink">
             Four things it does, in the order an officer does them.
           </h2>
-
-          <div className="mt-12 grid gap-x-10 gap-y-12 sm:grid-cols-2">
+          <div className="mt-10 grid gap-x-10 gap-y-9 sm:grid-cols-2">
             {CAPABILITIES.map((c) => (
-              <div key={c.n} className="border-t border-white/10 pt-5">
-                <span className={`font-mono text-xs font-bold ${c.accent}`}>{c.n}</span>
-                <h3 className="mt-3 text-lg font-semibold tracking-tight text-white">{c.title}</h3>
-                <p className="mt-2 max-w-sm text-sm leading-relaxed text-slate-400">{c.body}</p>
+              <div key={c.n} className="border-t border-line pt-4">
+                <span className="font-mono text-xs font-bold text-forest-600">{c.n}</span>
+                <h3 className="mt-2.5 text-base font-semibold tracking-tight text-ink">
+                  {c.title}
+                </h3>
+                <p className="mt-1.5 max-w-sm text-sm leading-relaxed text-ink-2">{c.body}</p>
               </div>
             ))}
           </div>
@@ -190,32 +158,26 @@ export default function LandingPage() {
       </section>
 
       {/* ---------- Honest disclosure ---------- */}
-      <section className="relative overflow-hidden bg-slate-950">
-        <span
-          className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-400/60 to-transparent"
-          aria-hidden
-        />
-        <div className="mx-auto max-w-6xl px-6 py-16">
-          <h2 className="font-mono text-xs font-semibold uppercase tracking-[0.16em] text-amber-400">
+      <section className="lw-forest lw-grain relative overflow-hidden">
+        <div className="relative mx-auto max-w-7xl px-6 py-14">
+          <h2 className="font-mono text-xs font-semibold uppercase tracking-[0.16em] text-white/55">
             What this prototype does not claim
           </h2>
-
-          <div className="mt-8 grid gap-x-12 gap-y-7 sm:grid-cols-2">
+          <div className="mt-7 grid gap-x-12 gap-y-6 sm:grid-cols-2">
             {DISCLAIMERS.map((d) => (
               <div key={d.head}>
                 <p className="text-sm font-semibold text-white">{d.head}</p>
-                <p className="mt-1.5 text-sm leading-relaxed text-slate-400">{d.body}</p>
+                <p className="mt-1.5 text-sm leading-relaxed text-white/65">{d.body}</p>
               </div>
             ))}
           </div>
-
-          <div className="mt-12 border-t border-white/10 pt-7">
+          <div className="mt-11 border-t border-white/10 pt-6">
             <Link
               href="/dashboard"
               className="group inline-flex items-center gap-2 text-sm font-semibold text-white"
             >
               See it working on the demo caseload
-              <span className="text-amber-400 transition-transform group-hover:translate-x-1" aria-hidden>
+              <span className="transition-transform group-hover:translate-x-1" aria-hidden>
                 →
               </span>
             </Link>

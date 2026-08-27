@@ -22,15 +22,15 @@ export function FactorPanel({ prediction }: { prediction: Prediction }) {
   const max = Math.max(...prediction.factors.map((f) => Math.abs(f.contribution)), 0.0001);
 
   return (
-    <div className="rounded-xl border bg-white p-5 shadow-sm">
+    <div className="rounded-card border bg-cream-surface p-5 shadow-card">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-sm font-semibold text-slate-900">Why this risk level</h2>
-          <p className="mt-0.5 text-xs text-slate-500">
+          <h2 className="text-sm font-semibold text-ink">Why this risk level</h2>
+          <p className="mt-0.5 text-xs text-ink-3">
             Ranked by impact. Bars right of centre raise risk, left of centre lower it.
           </p>
         </div>
-        <span className="shrink-0 rounded bg-slate-100 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-600">
+        <span className="shrink-0 rounded bg-cream-deep px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-ink-2">
           {prediction.is_mock_prediction ? "Rule-based" : "SHAP"}
         </span>
       </div>
@@ -42,12 +42,12 @@ export function FactorPanel({ prediction }: { prediction: Prediction }) {
           return (
             <li key={f.feature}>
               <div className="flex items-baseline justify-between gap-3">
-                <span className="text-sm font-medium text-slate-800">
+                <span className="text-sm font-medium text-ink">
                   {FEATURE_LABELS[f.feature] ?? f.feature.replace(/_/g, " ")}
                 </span>
                 <span
                   className={`font-mono text-xs tabular-nums ${
-                    raises ? "text-orange-700" : "text-teal-700"
+                    raises ? "text-risk-high" : "text-risk-low"
                   }`}
                 >
                   {raises ? "+" : ""}
@@ -56,10 +56,10 @@ export function FactorPanel({ prediction }: { prediction: Prediction }) {
               </div>
 
               {/* Diverging bar: centre line = no effect */}
-              <div className="relative mt-1.5 h-2 rounded-full bg-slate-100">
-                <span className="absolute left-1/2 top-[-2px] h-3 w-px bg-slate-300" aria-hidden />
+              <div className="relative mt-1.5 h-2 rounded-full bg-cream-deep">
+                <span className="absolute left-1/2 top-[-2px] h-3 w-px bg-line" aria-hidden />
                 <div
-                  className={`absolute top-0 h-2 ${raises ? "rounded-r-full bg-orange-500" : "rounded-l-full bg-teal-500"}`}
+                  className={`absolute top-0 h-2 ${raises ? "rounded-r-full bg-risk-high" : "rounded-l-full bg-risk-low"}`}
                   style={
                     raises
                       ? { left: "50%", width: `${Math.max(width, 1)}%` }
@@ -72,9 +72,9 @@ export function FactorPanel({ prediction }: { prediction: Prediction }) {
                 />
               </div>
 
-              <p className="mt-1.5 text-xs text-slate-600">
+              <p className="mt-1.5 text-xs text-ink-2">
                 {f.explanation}
-                <span className={`ml-1 font-medium ${raises ? "text-orange-700" : "text-teal-700"}`}>
+                <span className={`ml-1 font-medium ${raises ? "text-risk-high" : "text-risk-low"}`}>
                   — {raises ? "raising" : "lowering"} risk
                 </span>
               </p>
@@ -83,7 +83,7 @@ export function FactorPanel({ prediction }: { prediction: Prediction }) {
         })}
       </ul>
 
-      <p className="mt-5 border-t pt-3 text-[11px] leading-relaxed text-slate-500">
+      <p className="mt-5 border-t pt-3 text-[11px] leading-relaxed text-ink-3">
         These are contributing factors, <strong>not proven causes</strong> (PRD §4). They show
         what moved the score, not what will fix the delay.
       </p>

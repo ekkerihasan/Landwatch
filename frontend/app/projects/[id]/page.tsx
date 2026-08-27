@@ -6,7 +6,8 @@ import { FactorPanel } from "@/components/FactorPanel";
 import { FlagButton } from "@/components/FlagButton";
 import { RecommendationPanel } from "@/components/RecommendationPanel";
 import { RecordPanel } from "@/components/RecordPanel";
-import { RiskBadge } from "@/components/RiskBadge";
+import { RiskVerdict } from "@/components/RiskVerdict";
+import { STAGE_LABELS } from "@/lib/stages";
 import { StageTracker } from "@/components/StageTracker";
 import { WhatIfPanel } from "@/components/WhatIfPanel";
 import { fetchProject } from "@/lib/api";
@@ -38,13 +39,13 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   if (error) {
     return (
       <main className="mx-auto max-w-6xl space-y-4 px-6 py-8">
-        <Link href="/dashboard" className="text-sm text-slate-600 underline hover:text-slate-900">
+        <Link href="/dashboard" className="text-sm text-ink-2 underline hover:text-ink">
           ← Back to dashboard
         </Link>
-        <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-sm text-red-700">
+        <div className="rounded-lg border border-risk-critical/30 bg-risk-criticalBg p-6 text-sm text-risk-critical">
           <p className="font-semibold">Could not load project {id}</p>
           <p className="mt-1">{error}</p>
-          <p className="mt-3 text-xs text-red-600">
+          <p className="mt-3 text-xs text-risk-critical">
             This view needs the live API — start it with{" "}
             <code>uvicorn app.main:app --reload --port 8000</code>.
           </p>
@@ -56,11 +57,11 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   if (!project) {
     return (
       <main className="mx-auto max-w-6xl space-y-4 px-6 py-8">
-        <div className="h-5 w-32 animate-pulse rounded bg-slate-200" />
-        <div className="h-24 animate-pulse rounded-xl bg-slate-100" />
+        <div className="h-5 w-32 animate-pulse rounded bg-cream-deep" />
+        <div className="h-24 animate-pulse rounded-card bg-cream-deep" />
         <div className="grid gap-5 lg:grid-cols-2">
-          <div className="h-80 animate-pulse rounded-xl bg-slate-100" />
-          <div className="h-80 animate-pulse rounded-xl bg-slate-100" />
+          <div className="h-80 animate-pulse rounded-card bg-cream-deep" />
+          <div className="h-80 animate-pulse rounded-card bg-cream-deep" />
         </div>
       </main>
     );
@@ -70,46 +71,49 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
 
   return (
     <main className="mx-auto max-w-6xl space-y-5 px-6 py-8">
-      <Link href="/dashboard" className="inline-block text-sm text-slate-600 underline hover:text-slate-900">
+      <Link href="/dashboard" className="inline-block text-sm text-ink-2 underline hover:text-ink">
         ← Back to dashboard
       </Link>
 
-      {/* Header — risk never appears without a path to "why" (Design Brief §1) */}
-      <div className="rounded-xl border bg-white p-5 shadow-sm">
+      {/* Identity, then the verdict. An officer reads what, then how bad, then why. */}
+      <div className="rounded-card border border-line bg-cream-surface p-5 shadow-card">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
-            <h1 className="text-xl font-bold tracking-tight text-slate-900">{project.name}</h1>
-            <p className="mt-1 text-sm text-slate-600">
-              {project.location} · {project.sector} · ID #{project.project_id}
+            <h1 className="text-xl font-bold tracking-tight text-ink">{project.name}</h1>
+            <p className="mt-1 text-sm text-ink-2">
+              {project.location} · {project.sector} · Project #{project.project_id}
             </p>
-            <div className="mt-3 flex flex-wrap gap-2 text-xs">
-              <span className="rounded bg-slate-100 px-2 py-1 text-slate-700">
-                Stage <span className="font-mono font-semibold">{project.current_stage}</span>
+            <div className="mt-3 flex flex-wrap gap-1.5 text-[11px]">
+              <span className="rounded bg-forest-800 px-2 py-1 font-mono font-semibold text-cream-surface">
+                {project.current_stage}
               </span>
-              <span className="rounded bg-slate-100 px-2 py-1 text-slate-700">
-                {project.paf_count ?? "—"} PAFs
+              <span className="rounded bg-cream-deep px-2 py-1 text-ink-2">
+                {STAGE_LABELS[project.current_stage] ?? "Current stage"}
               </span>
-              <span className="rounded bg-slate-100 px-2 py-1 text-slate-700">
+              <span className="rounded bg-cream-deep px-2 py-1 text-ink-2">
+                {project.paf_count ?? "—"} families
+              </span>
+              <span className="rounded bg-cream-deep px-2 py-1 text-ink-2">
                 {project.area != null ? `${project.area} ha` : "—"}
               </span>
-              <span className="rounded bg-slate-100 px-2 py-1 text-slate-700">
+              {project.rehabilitation_progress_pct != null && (
+                <span className="rounded bg-cream-deep px-2 py-1 text-ink-2">
+                  R&amp;R {Math.round(project.rehabilitation_progress_pct)}%
+                </span>
+              )}
+              <span className="rounded bg-cream-deep px-2 py-1 text-ink-2">
                 Opened {formatDate(project.created_at)}
               </span>
             </div>
           </div>
-          <div className="flex shrink-0 flex-col items-start gap-2 sm:items-end">
-            <RiskBadge level={project.prediction.risk_class} probability={project.prediction.probability} />
-            <span className="text-[11px] text-slate-400">{project.prediction.model_version}</span>
-            {project.prediction.missing_inputs?.length > 0 && (
-              <span className="rounded bg-slate-100 px-2 py-1 text-[11px] text-slate-600 ring-1 ring-slate-200">
-                No data yet for {project.prediction.missing_inputs.join(", ")} — a neutral value
-                was assumed, so treat this score as provisional.
-              </span>
-            )}
+
+          <div className="shrink-0">
             <FlagButton projectId={project.project_id} prediction={project.prediction} />
           </div>
         </div>
       </div>
+
+      <RiskVerdict prediction={project.prediction} />
 
       <div className="grid gap-5 lg:grid-cols-2">
         <StageTracker history={project.stage_history} currentStage={project.current_stage} />
@@ -123,25 +127,25 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
 
       {/* Supporting records */}
       <div className="grid gap-5 md:grid-cols-2">
-        <div className="rounded-xl border bg-white p-5 shadow-sm">
-          <h2 className="text-sm font-semibold text-slate-900">
+        <div className="rounded-card border bg-cream-surface p-5 shadow-card">
+          <h2 className="text-sm font-semibold text-ink">
             Litigation{" "}
-            <span className="font-normal text-slate-500">
+            <span className="font-normal text-ink-3">
               ({openLitigation.length} open of {project.litigations.length})
             </span>
           </h2>
           {project.litigations.length === 0 ? (
-            <p className="mt-3 text-xs text-slate-500">No litigation recorded.</p>
+            <p className="mt-3 text-xs text-ink-3">No litigation recorded.</p>
           ) : (
-            <ul className="mt-3 divide-y divide-slate-100">
+            <ul className="mt-3 divide-y divide-line-soft">
               {project.litigations.map((l) => (
                 <li key={l.id} className="flex items-center justify-between gap-3 py-2 text-sm">
-                  <span className="text-slate-700">{l.type ?? "Unspecified"}</span>
+                  <span className="text-ink-2">{l.type ?? "Unspecified"}</span>
                   <span
                     className={`shrink-0 rounded px-2 py-0.5 text-xs font-medium ${
                       l.status === "pending"
-                        ? "bg-orange-100 text-orange-800"
-                        : "bg-teal-100 text-teal-800"
+                        ? "bg-risk-highBg text-risk-high"
+                        : "bg-risk-lowBg text-risk-low"
                     }`}
                   >
                     {l.status}
@@ -152,22 +156,28 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
           )}
         </div>
 
-        <div className="rounded-xl border bg-white p-5 shadow-sm">
-          <h2 className="text-sm font-semibold text-slate-900">Compensation</h2>
+        <div className="rounded-card border bg-cream-surface p-5 shadow-card">
+          <h2 className="text-sm font-semibold text-ink">Compensation</h2>
           {project.compensation_records.length === 0 ? (
-            <p className="mt-3 text-xs text-slate-500">No compensation recorded.</p>
+            <p className="mt-3 text-xs text-ink-3">No compensation recorded.</p>
           ) : (
-            <ul className="mt-3 divide-y divide-slate-100">
+            <ul className="mt-3 divide-y divide-line-soft">
               {project.compensation_records.map((c) => (
                 <li key={c.id} className="flex items-center justify-between gap-3 py-2 text-sm">
-                  <span className="text-slate-700">{c.compensation_pct}% disbursed</span>
-                  <span className="text-xs text-slate-500">{formatDate(c.updated_at)}</span>
+                  <span className="text-ink-2">{c.compensation_pct}% disbursed</span>
+                  <span className="text-xs text-ink-3">{formatDate(c.updated_at)}</span>
                 </li>
               ))}
             </ul>
           )}
         </div>
       </div>
+
+      <p className="text-[11px] leading-relaxed text-ink-3">
+        Scored by <span className="font-mono">{project.prediction.model_version}</span>,
+        trained on synthetic data — this score demonstrates the pipeline rather than
+        validated real-world accuracy.
+      </p>
     </main>
   );
 }

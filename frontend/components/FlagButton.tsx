@@ -38,7 +38,7 @@ export function FlagButton({
 
   if (done) {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded border border-teal-200 bg-teal-50 px-3 py-2 text-sm font-medium text-teal-800">
+      <span className="inline-flex items-center gap-1.5 rounded border border-risk-low/30 bg-risk-lowBg px-3 py-2 text-sm font-medium text-risk-low">
         ✓ Flagged for review
       </span>
     );
@@ -48,7 +48,7 @@ export function FlagButton({
     return (
       <button
         onClick={() => setOpen(true)}
-        className="rounded border border-slate-300 px-3.5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+        className="rounded border border-line px-3.5 py-2 text-sm font-medium text-ink-2 hover:bg-cream-alt"
       >
         Flag for review
       </button>
@@ -56,9 +56,9 @@ export function FlagButton({
   }
 
   return (
-    <div className="w-full rounded-lg border border-slate-300 bg-white p-4 shadow-sm">
-      <p className="text-sm font-semibold text-slate-900">Flag this project for investigation?</p>
-      <p className="mt-1 text-xs text-slate-600">
+    <div className="w-full rounded-lg border border-line bg-cream-surface p-4 shadow-card">
+      <p className="text-sm font-semibold text-ink">Flag this project for investigation?</p>
+      <p className="mt-1 text-xs text-ink-2">
         The current rationale is attached automatically:{" "}
         <strong>
           {prediction.risk_class} ({Math.round(prediction.probability * 100)}%)
@@ -70,20 +70,20 @@ export function FlagButton({
         onChange={(e) => setNote(e.target.value)}
         rows={2}
         placeholder="Optional note for the reviewing officer…"
-        className="mt-3 w-full rounded border border-slate-200 p-2 text-sm text-slate-900 placeholder:text-slate-400"
+        className="mt-3 w-full rounded border border-line p-2 text-sm text-ink placeholder:text-ink-3"
       />
-      {error && <p className="mt-2 text-xs text-red-700">{error}</p>}
+      {error && <p className="mt-2 text-xs text-risk-critical">{error}</p>}
       <div className="mt-3 flex gap-2">
         <button
           onClick={confirm}
           disabled={busy}
-          className="rounded bg-slate-900 px-3.5 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:bg-slate-300"
+          className="rounded bg-forest-800 px-3.5 py-2 text-sm font-medium text-cream-surface hover:bg-forest-700 disabled:bg-line"
         >
           {busy ? "Flagging…" : "Confirm flag"}
         </button>
         <button
           onClick={() => setOpen(false)}
-          className="rounded border border-slate-200 px-3.5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          className="rounded border border-line px-3.5 py-2 text-sm font-medium text-ink-2 hover:bg-cream-alt"
         >
           Cancel
         </button>

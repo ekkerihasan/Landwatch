@@ -69,15 +69,15 @@ export function WhatIfPanel({
   }
 
   return (
-    <div className="rounded-xl border bg-white p-5 shadow-sm">
+    <div className="rounded-card border bg-cream-surface p-5 shadow-card">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-sm font-semibold text-slate-900">What-if simulator</h2>
-          <p className="mt-0.5 text-xs text-slate-500">
+          <h2 className="text-sm font-semibold text-ink">What-if simulator</h2>
+          <p className="mt-0.5 text-xs text-ink-3">
             Adjust an actionable input and re-score. Nothing here changes the project record.
           </p>
         </div>
-        <span className="shrink-0 rounded bg-slate-100 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-600">
+        <span className="shrink-0 rounded bg-cream-deep px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-ink-2">
           Scenario
         </span>
       </div>
@@ -88,14 +88,14 @@ export function WhatIfPanel({
           return (
             <div key={s.key}>
               <div className="flex items-baseline justify-between gap-2">
-                <label htmlFor={s.key} className="text-sm font-medium text-slate-800">
+                <label htmlFor={s.key} className="text-sm font-medium text-ink">
                   {s.label}
                 </label>
-                <span className="font-mono text-xs tabular-nums text-slate-700">
+                <span className="font-mono text-xs tabular-nums text-ink-2">
                   {values[s.key]}
                   {s.unit}
                   {isChanged && (
-                    <span className="ml-1.5 text-slate-400">
+                    <span className="ml-1.5 text-ink-3">
                       (was {baseline[s.key]}
                       {s.unit})
                     </span>
@@ -110,9 +110,9 @@ export function WhatIfPanel({
                 step={s.step}
                 value={values[s.key]}
                 onChange={(e) => setValues({ ...values, [s.key]: Number(e.target.value) })}
-                className="mt-2 w-full accent-slate-900"
+                className="mt-2 w-full accent-forest-700"
               />
-              <p className="mt-1 text-[11px] text-slate-500">{s.hint}</p>
+              <p className="mt-1 text-[11px] text-ink-3">{s.hint}</p>
             </div>
           );
         })}
@@ -122,33 +122,33 @@ export function WhatIfPanel({
         <button
           onClick={run}
           disabled={busy || changed.length === 0}
-          className="rounded bg-slate-900 px-3.5 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+          className="rounded bg-forest-800 px-3.5 py-2 text-sm font-medium text-cream-surface hover:bg-forest-700 disabled:cursor-not-allowed disabled:bg-line"
         >
           {busy ? "Re-scoring…" : "Run scenario"}
         </button>
         {(changed.length > 0 || result) && (
           <button
             onClick={reset}
-            className="rounded border border-slate-200 px-3.5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className="rounded border border-line px-3.5 py-2 text-sm font-medium text-ink-2 hover:bg-cream-alt"
           >
             Reset
           </button>
         )}
         {changed.length === 0 && !result && (
-          <span className="text-xs text-slate-400">Move a slider to enable</span>
+          <span className="text-xs text-ink-3">Move a slider to enable</span>
         )}
       </div>
 
       {error && (
-        <p className="mt-3 rounded border border-red-200 bg-red-50 p-2.5 text-xs text-red-700">{error}</p>
+        <p className="mt-3 rounded border border-risk-critical/30 bg-risk-criticalBg p-2.5 text-xs text-risk-critical">{error}</p>
       )}
 
       {result && (
-        <div className="mt-5 rounded-lg border border-slate-200 bg-slate-50 p-4">
+        <div className="mt-5 rounded-lg border border-line bg-cream-alt p-4">
           {/* Side-by-side before/after — Design Brief §3 */}
           <div className="flex flex-wrap items-center gap-4">
             <div>
-              <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">Now</p>
+              <p className="text-[11px] font-medium uppercase tracking-wide text-ink-3">Now</p>
               <div className="mt-1">
                 <RiskBadge
                   level={result.baseline.risk_class}
@@ -156,11 +156,11 @@ export function WhatIfPanel({
                 />
               </div>
             </div>
-            <span className="text-lg text-slate-300" aria-hidden>
+            <span className="text-lg text-ink-3" aria-hidden>
               →
             </span>
             <div>
-              <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-ink-3">
                 Scenario
               </p>
               <div className="mt-1">
@@ -171,12 +171,12 @@ export function WhatIfPanel({
               </div>
             </div>
             <div className="ml-auto text-right">
-              <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-ink-3">
                 Change
               </p>
               <p
                 className={`font-mono text-sm font-semibold tabular-nums ${
-                  result.probability_delta < 0 ? "text-teal-700" : "text-red-700"
+                  result.probability_delta < 0 ? "text-risk-low" : "text-risk-critical"
                 }`}
               >
                 {result.probability_delta > 0 ? "+" : ""}
@@ -185,7 +185,7 @@ export function WhatIfPanel({
             </div>
           </div>
 
-          <p className="mt-3 border-t border-slate-200 pt-3 text-[11px] leading-relaxed text-slate-600">
+          <p className="mt-3 border-t border-line pt-3 text-[11px] leading-relaxed text-ink-2">
             {result.disclaimer}
           </p>
         </div>
