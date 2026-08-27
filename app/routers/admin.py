@@ -13,6 +13,8 @@ METRICS_PATH = os.getenv("MODEL_METRICS", "ml/artifacts/metrics.json")
 @router.get("/model")
 def model_info():
     """Current model version, training date and evaluation metrics (technicaldesign.md §3)."""
+    from app.stages import BASELINE_SOURCE, STAGE_EXPECTED_DAYS
+
     artifact = trained_model.load_artifact()
     if artifact is None:
         return {
@@ -35,6 +37,8 @@ def model_info():
         "trained_on": artifact["trained_on"],
         "n_train": artifact["n_train"],
         "features": artifact["features"],
+        "stage_baselines": STAGE_EXPECTED_DAYS,
+        "baseline_source": BASELINE_SOURCE,
         "metrics": metrics,
         "disclaimer": (
             "Trained on SYNTHETIC data. These metrics show the pipeline works; they are "
