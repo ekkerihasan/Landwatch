@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import type { Project } from "@/lib/types";
-import { mockRiskForProject, RiskBadge } from "./RiskBadge";
+import { RiskBadge } from "./RiskBadge";
 
 const STAGE_ORDER: Record<string, number> = {
   "3A": 0,
@@ -52,11 +53,16 @@ export function ProjectTable({ projects }: { projects: Project[] }) {
           </thead>
           <tbody className="divide-y divide-slate-100">
             {projects.map((p) => {
-              const risk = mockRiskForProject(p.project_id);
+              const risk = p.prediction;
               return (
                 <tr key={p.project_id} className="hover:bg-slate-50/70">
                   <td className="px-4 py-3">
-                    <div className="font-medium text-slate-900">{p.name}</div>
+                    <Link
+                      href={`/projects/${p.project_id}`}
+                      className="font-medium text-slate-900 hover:text-slate-600 hover:underline"
+                    >
+                      {p.name}
+                    </Link>
                     <div className="text-xs text-slate-500">ID #{p.project_id}</div>
                   </td>
                   <td className="px-4 py-3 text-slate-600">{p.location}</td>
@@ -76,7 +82,7 @@ export function ProjectTable({ projects }: { projects: Project[] }) {
                   <td className="px-4 py-3 text-slate-700">{p.paf_count ?? "—"}</td>
                   <td className="px-4 py-3 text-slate-700">{p.area != null ? `${p.area} ha` : "—"}</td>
                   <td className="px-4 py-3">
-                    <RiskBadge level={risk} />
+                    <RiskBadge level={risk.risk_class} probability={risk.probability} />
                   </td>
                   <td className="px-4 py-3 text-xs text-slate-500">{formatDate(p.created_at)}</td>
                 </tr>
@@ -89,17 +95,22 @@ export function ProjectTable({ projects }: { projects: Project[] }) {
       {/* Mobile cards */}
       <div className="divide-y md:hidden">
         {projects.map((p) => {
-          const risk = mockRiskForProject(p.project_id);
+          const risk = p.prediction;
           return (
             <div key={p.project_id} className="p-4">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <div className="truncate font-medium text-slate-900">{p.name}</div>
+                  <Link
+                    href={`/projects/${p.project_id}`}
+                    className="block truncate font-medium text-slate-900 hover:underline"
+                  >
+                    {p.name}
+                  </Link>
                   <div className="text-xs text-slate-500">
                     {p.location} • {p.sector}
                   </div>
                 </div>
-                <RiskBadge level={risk} />
+                <RiskBadge level={risk.risk_class} probability={risk.probability} />
               </div>
               <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-600">
                 <span className="rounded bg-slate-100 px-2 py-1 font-mono">Stage {p.current_stage}</span>

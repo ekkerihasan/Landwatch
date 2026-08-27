@@ -1,0 +1,78 @@
+{
+  "selected": {
+    "model": "logistic_regression",
+    "roc_auc": 0.9066,
+    "pr_auc": 0.8555,
+    "recall_delayed": 0.8352,
+    "precision_delayed": 0.7194,
+    "f1_delayed": 0.773,
+    "confusion": {
+      "tn": 396,
+      "fp": 87,
+      "fn": 44,
+      "tp": 223
+    }
+  },
+  "baseline": {
+    "model": "logistic_regression",
+    "roc_auc": 0.9066,
+    "pr_auc": 0.8555,
+    "recall_delayed": 0.8352,
+    "precision_delayed": 0.7194,
+    "f1_delayed": 0.773,
+    "confusion": {
+      "tn": 396,
+      "fp": 87,
+      "fn": 44,
+      "tp": 223
+    }
+  },
+  "all_results": [
+    {
+      "model": "logistic_regression",
+      "roc_auc": 0.9066,
+      "pr_auc": 0.8555,
+      "recall_delayed": 0.8352,
+      "precision_delayed": 0.7194,
+      "f1_delayed": 0.773,
+      "confusion": {
+        "tn": 396,
+        "fp": 87,
+        "fn": 44,
+        "tp": 223
+      }
+    },
+    {
+      "model": "random_forest",
+      "roc_auc": 0.8969,
+      "pr_auc": 0.8519,
+      "recall_delayed": 0.7753,
+      "precision_delayed": 0.7393,
+      "f1_delayed": 0.7569,
+      "confusion": {
+        "tn": 410,
+        "fp": 73,
+        "fn": 60,
+        "tp": 207
+      }
+    },
+    {
+      "model": "xgboost",
+      "roc_auc": 0.9114,
+      "pr_auc": 0.8634,
+      "recall_delayed": 0.7416,
+      "precision_delayed": 0.7952,
+      "f1_delayed": 0.7674,
+      "confusion": {
+        "tn": 432,
+        "fp": 51,
+        "fn": 69,
+        "tp": 198
+      }
+    }
+  ],
+  "trained_at": "2026-08-27T03:26:32.166433+00:00",
+  "trained_on": "synthetic",
+  "delay_label": "statutory baseline, 1.5x threshold (PROVISIONAL)",
+  "note": "Synthetic data \u2014 measures pipeline correctness, not real-world accuracy."
+}
