@@ -28,6 +28,7 @@ const TYPICAL = {
   paf_count: 133,
   expected_litigations: 1,
   planned_compensation_pct: 58,
+  planned_rehabilitation_pct: 49,
 };
 
 const FIELD_LABELS: Record<string, string> = {
@@ -36,6 +37,7 @@ const FIELD_LABELS: Record<string, string> = {
   days_in_current_stage: "time in stage",
   expected_litigations: "anticipated disputes",
   planned_compensation_pct: "compensation at start",
+  planned_rehabilitation_pct: "rehabilitation progress",
 };
 
 type Blank = number | "";
@@ -56,6 +58,7 @@ export default function AssessSitePage() {
     paf_count: "",
     expected_litigations: "",
     planned_compensation_pct: "",
+    planned_rehabilitation_pct: "",
   });
 
   useEffect(() => {
@@ -110,6 +113,10 @@ export default function AssessSitePage() {
         current_stage: stage,
         latitude: picked.lat,
         longitude: picked.lng,
+        rehabilitation_progress_pct:
+          form.planned_rehabilitation_pct === ""
+            ? null
+            : Number(form.planned_rehabilitation_pct),
       });
       setSaved(created.project_id);
     } catch (e) {
@@ -279,6 +286,30 @@ export default function AssessSitePage() {
             </div>
 
             <div>
+              <label className={labelCls} htmlFor="rehab">
+                Rehabilitation progress (%)
+              </label>
+              <input
+                id="rehab"
+                type="number"
+                min={0}
+                max={100}
+                className={`mt-1 ${inputCls}`}
+                placeholder={`typical: ${TYPICAL.planned_rehabilitation_pct}`}
+                value={form.planned_rehabilitation_pct}
+                onChange={(e) =>
+                  set(
+                    "planned_rehabilitation_pct",
+                    e.target.value === "" ? "" : Number(e.target.value)
+                  )
+                }
+              />
+              <p className="mt-1 text-[11px] text-slate-500">
+                R&amp;R below 50% blocks possession regardless of how the award progresses.
+              </p>
+            </div>
+
+            <div>
               <label className={labelCls} htmlFor="stage">
                 Starting stage
               </label>
@@ -327,11 +358,38 @@ export default function AssessSitePage() {
                   <h2 className="text-sm font-semibold text-slate-900">Estimated risk</h2>
                   <p className="mt-0.5 text-xs text-slate-500">{location}</p>
                 </div>
-                <RiskBadge
-                  level={result.prediction.risk_class}
-                  probability={result.prediction.probability}
-                />
+                <div className="flex flex-col items-end gap-1">
+                  <RiskBadge
+                    level={result.prediction.risk_class}
+                    probability={result.prediction.probability}
+                  />
+                  {result.prediction.delay_estimate && (
+                    <span className="font-mono text-[11px] text-slate-600">
+                      delay {result.prediction.delay_estimate.lower_days}–
+                      {result.prediction.delay_estimate.upper_days} days
+                    </span>
+                  )}
+                </div>
               </div>
+
+              {/* Saving is the step people miss — an estimate writes no record at all. */}
+              {!saved && (
+                <div className="mt-4 rounded-lg border border-slate-900 bg-slate-50 p-3.5">
+                  <p className="text-xs font-semibold text-slate-900">
+                    This estimate has not been saved.
+                  </p>
+                  <p className="mt-0.5 text-[11px] text-slate-600">
+                    Nothing appears on the dashboard until you track it as a project.
+                  </p>
+                  <button
+                    onClick={saveAsProject}
+                    disabled={busy}
+                    className="mt-2.5 w-full rounded bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700 disabled:bg-slate-300"
+                  >
+                    {busy ? "Saving…" : "Track this as a project"}
+                  </button>
+                </div>
+              )}
 
               {result.assumed_inputs.length > 0 && (
                 <p className="mt-3 rounded border border-slate-200 bg-slate-50 p-2.5 text-[11px] leading-relaxed text-slate-600">
@@ -368,11 +426,17 @@ export default function AssessSitePage() {
                     >
                       Open it
                     </Link>
+                    <Link
+                      href="/dashboard"
+                      className="text-xs font-medium text-slate-700 underline hover:text-slate-900"
+                    >
+                      Back to dashboard
+                    </Link>
                   </div>
                 ) : (
                   <>
                     <label className={labelCls} htmlFor="pname">
-                      Project name (optional)
+                      Project name (optional — used when you save)
                     </label>
                     <input
                       id="pname"
@@ -381,16 +445,10 @@ export default function AssessSitePage() {
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                     />
-                    <button
-                      onClick={saveAsProject}
-                      disabled={busy}
-                      className="mt-2.5 w-full rounded border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:bg-slate-100"
-                    >
-                      {busy ? "Saving…" : "Track this as a project"}
-                    </button>
                     <p className="mt-1.5 text-[11px] text-slate-500">
-                      Creates a real record on the dashboard. Its score is then recalculated from
-                      actual data as stages, litigation and compensation are entered.
+                      Saving creates a real record on the dashboard. Its score is then
+                      recalculated from actual data as stages, litigation and compensation
+                      are entered.
                     </p>
                   </>
                 )}

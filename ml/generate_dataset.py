@@ -57,15 +57,24 @@ def generate(n: int = N_PROJECTS, seed: int = SEED) -> pd.DataFrame:
         92 - 7.5 * eventual_open_lit - 6.0 * friction + rng.normal(0, 9, size=n), 0, 100
     )
 
+    # Rehabilitation & resettlement runs alongside acquisition. It lags where
+    # displacement is large and administrative capacity is thin, and a lagging R&R
+    # process holds up possession independently of compensation.
+    eventual_rehab = np.clip(
+        88 - 0.9 * np.log1p(paf_count) * 4.0 - 7.0 * friction + rng.normal(0, 11, size=n), 0, 100
+    )
+
     # --- Eventual delay pressure: interactions + noise ----------------------
     lit_pressure = np.log1p(eventual_open_lit) * 0.85
     comp_gap = (100 - eventual_comp) / 100
+    rehab_gap = (100 - eventual_rehab) / 100
     interaction = 1.15 * lit_pressure * comp_gap  # the two compound
     scale_effect = 0.42 * (np.log1p(paf_count) / np.log(3000))
 
     pressure = (
         0.75 * lit_pressure
         + 0.80 * comp_gap
+        + 0.50 * rehab_gap
         + interaction
         + scale_effect
         + 0.55 * friction
@@ -97,6 +106,11 @@ def generate(n: int = N_PROJECTS, seed: int = SEED) -> pd.DataFrame:
         eventual_comp * (0.35 + 0.65 * obs_fraction) + rng.normal(0, 5, size=n), 0, 100
     ).round(1)
 
+    # R&R progress climbs with the project, like compensation.
+    rehabilitation_progress_pct = np.clip(
+        eventual_rehab * (0.30 + 0.70 * obs_fraction) + rng.normal(0, 6, size=n), 0, 100
+    ).round(1)
+
     # --- Observable timing features -----------------------------------------
     current_expected = np.array([STAGE_EXPECTED_DAYS[s] for s in current_stage])
     share = np.clip(rng.beta(2.2, 3.0, size=n), 0.05, 0.95)
@@ -114,11 +128,17 @@ def generate(n: int = N_PROJECTS, seed: int = SEED) -> pd.DataFrame:
         "open_litigations": open_litigations,
         "resolved_litigations": resolved_litigations,
         "compensation_pct": compensation_pct,
+        "rehabilitation_progress_pct": rehabilitation_progress_pct,
         "days_in_current_stage": days_in_current_stage.astype(int),
         "prior_stage_avg_days": prior_stage_avg_days,
         "stage_overrun_ratio": (days_in_current_stage / current_expected).round(3),
         "observed_elapsed_days": observed_elapsed.round().astype(int),
         "delay_label": delay_label,
+        # Regression target (V2 contract Gap 1): days of overrun beyond the statutory
+        # baseline, still to come as of the observation point. Zero when the project
+        # finishes within baseline — the regressor learns "no overrun" as a real value.
+        "delay_days": np.clip(eventual_total - expected_total, 0, None).round().astype(int),
+        "remaining_delay_days": np.clip(eventual_total - observed_elapsed, 0, None).round().astype(int),
     })
 
     # A start date lets us do a time-based split instead of a random one.

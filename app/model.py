@@ -11,8 +11,7 @@ import pandas as pd
 
 ARTIFACT_PATH = os.getenv("MODEL_ARTIFACT", "ml/artifacts/model.joblib")
 
-STAGE_SEQUENCE = ["3A", "3C", "3D", "3G", "3H", "3E"]
-STAGE_EXPECTED_DAYS = {"3A": 60, "3C": 90, "3D": 120, "3G": 90, "3H": 60, "3E": 45}
+from app.stages import STAGE_EXPECTED_DAYS, STAGE_SEQUENCE  # noqa: F401
 
 # Phrasing and recommendation rules live in one reviewable config (V2 contract, Gaps 2-3).
 from app.factor_config import phrase_for, recommend  # noqa: E402
@@ -43,6 +42,7 @@ def extract_features(project) -> dict:
     """
     from app.risk import (
         NEUTRAL_COMPENSATION_PCT,
+        NEUTRAL_REHABILITATION_PCT,
         days_in_current_stage,
         latest_compensation_pct,
         open_litigation_count,
@@ -72,6 +72,11 @@ def extract_features(project) -> dict:
         "days_in_current_stage": float(days),
         "prior_stage_avg_days": float(round(prior_avg, 1)),
         "stage_overrun_ratio": float(round(days / expected, 3)) if expected else 0.0,
+        "rehabilitation_progress_pct": float(
+            NEUTRAL_REHABILITATION_PCT
+            if getattr(project, "rehabilitation_progress_pct", None) is None
+            else project.rehabilitation_progress_pct
+        ),
         "stage_index": float(stage_index),
         "current_stage": stage,
     }
@@ -102,6 +107,27 @@ def _collapse_shap(shap_row, encoded_names, features: dict) -> list:
     return totals
 
 
+def predict_delay_days(artifact, row) -> dict:
+    """Predicted overrun in days, as a range. A point estimate to the day from a
+    model trained on synthetic data is the least defensible number we could show."""
+    regressors = artifact.get("regressors")
+    if not regressors:
+        return None
+    lower = max(float(regressors["lower"].predict(row)[0]), 0.0)
+    median = max(float(regressors["median"].predict(row)[0]), 0.0)
+    upper = max(float(regressors["upper"].predict(row)[0]), 0.0)
+    # Quantile models are fitted independently and can cross on unusual inputs.
+    lower, median, upper = sorted([lower, median, upper])
+    metrics = artifact.get("regression_metrics", {})
+    return {
+        "lower_days": int(round(lower)),
+        "median_days": int(round(median)),
+        "upper_days": int(round(upper)),
+        "mae_days": metrics.get("mae_days"),
+        "interval_coverage": metrics.get("interval_coverage"),
+    }
+
+
 def predict(project) -> dict:
     """Risk class, probability and SHAP factors for one project."""
     artifact = load_artifact()
@@ -112,9 +138,14 @@ def predict(project) -> dict:
     row = pd.DataFrame([features])[artifact["features"]]
 
     pipeline = artifact["pipeline"]
-    probability = float(pipeline.predict_proba(row)[0, 1])
+    # Clamped so the card can never read 100%. The model is trained on synthetic data;
+    # displaying certainty would be the least defensible thing on the screen.
+    probability = min(float(pipeline.predict_proba(row)[0, 1]), 0.99)
 
-    prep = pipeline.named_steps["prep"]
+    # The deployed pipeline is the calibration wrapper; SHAP explains the estimator
+    # underneath it. The calibrator only rescales the output, so the attributions hold.
+    shap_pipeline = artifact.get("shap_pipeline", pipeline)
+    prep = shap_pipeline.named_steps["prep"]
     transformed = prep.transform(row)
     shap_values = artifact["explainer"](transformed)
     values = np.asarray(shap_values.values)[0]
@@ -151,4 +182,5 @@ def predict(project) -> dict:
         "is_mock_prediction": False,
         "missing_inputs": missing_inputs(project),
         "recommendations": recommend(features, top_factors, risk_class),
+        "delay_estimate": predict_delay_days(artifact, row),
     }

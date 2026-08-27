@@ -11,6 +11,17 @@ class RiskFactor(BaseModel):
     explanation: str
 
 
+class DelayEstimate(BaseModel):
+    """Predicted overrun as a RANGE. A point estimate to the day, from a model trained
+    on synthetic data, is not defensible — the contract says show an interval."""
+
+    lower_days: int
+    median_days: int
+    upper_days: int
+    mae_days: Optional[float] = None
+    interval_coverage: Optional[float] = None
+
+
 class Recommendation(BaseModel):
     """Administrative action mapped from a measured condition. Not model output."""
 
@@ -33,6 +44,8 @@ class Prediction(BaseModel):
     missing_inputs: List[str] = []
     # Deterministic rule output, not model output — see app/factor_config.py
     recommendations: List[Recommendation] = []
+    # Present only once a delay regressor has been trained.
+    delay_estimate: Optional[DelayEstimate] = None
 
 
 class StageHistoryOut(BaseModel):
@@ -40,9 +53,15 @@ class StageHistoryOut(BaseModel):
 
     id: int
     stage: str
+    label: str = ""
     entered_at: datetime
     exited_at: Optional[datetime] = None
     days_in_stage: Optional[int] = None
+    # Derived server-side from app/stages.py so the frontend holds no copy of the
+    # statutory durations. This is the card's "24 days behind baseline".
+    expected_days: int = 0
+    elapsed_days: int = 0
+    days_vs_baseline: int = 0
 
 
 class LitigationOut(BaseModel):
@@ -85,6 +104,7 @@ class ProjectOut(BaseModel):
     current_stage: str
     latitude: Optional[float] = None
     longitude: Optional[float] = None
+    rehabilitation_progress_pct: Optional[float] = None
     created_at: datetime
     prediction: Prediction
 
@@ -142,6 +162,7 @@ class ProjectCreate(BaseModel):
     current_stage: str = Field(default="3A", pattern="^(3A|3C|3D|3G|3H|3E)$")
     latitude: Optional[float] = Field(default=None, ge=-90, le=90)
     longitude: Optional[float] = Field(default=None, ge=-180, le=180)
+    rehabilitation_progress_pct: Optional[float] = Field(default=None, ge=0, le=100)
 
 
 class ProjectUpdate(BaseModel):
@@ -155,6 +176,7 @@ class ProjectUpdate(BaseModel):
     current_stage: Optional[str] = Field(default=None, pattern="^(3A|3C|3D|3G|3H|3E)$")
     latitude: Optional[float] = Field(default=None, ge=-90, le=90)
     longitude: Optional[float] = Field(default=None, ge=-180, le=180)
+    rehabilitation_progress_pct: Optional[float] = Field(default=None, ge=0, le=100)
 
 
 class StageAdvance(BaseModel):
@@ -198,6 +220,7 @@ class NewProjectScoreRequest(BaseModel):
     days_in_current_stage: Optional[float] = Field(default=None, ge=0)
     expected_litigations: Optional[float] = Field(default=None, ge=0)
     planned_compensation_pct: Optional[float] = Field(default=None, ge=0, le=100)
+    planned_rehabilitation_pct: Optional[float] = Field(default=None, ge=0, le=100)
 
 
 class NewProjectScoreResponse(BaseModel):

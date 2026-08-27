@@ -26,6 +26,7 @@ TYPICAL = {
     "days_in_current_stage": 0.0,
     "expected_litigations": 1.0,  # training median
     "planned_compensation_pct": 58.0,  # training median; NOT 0, which reads as worst case
+    "planned_rehabilitation_pct": 49.0,  # training median
 }
 
 ESTIMATE_DISCLAIMER = (
@@ -68,6 +69,7 @@ def score_new_project(payload: NewProjectScoreRequest, db: Session = Depends(get
             "open_litigations": float(values["expected_litigations"]),
             "resolved_litigations": 0.0,
             "compensation_pct": float(values["planned_compensation_pct"]),
+            "rehabilitation_progress_pct": float(values["planned_rehabilitation_pct"]),
             "prior_stage_avg_days": 0.0,  # nothing completed yet
             "stage_overrun_ratio": round(values["days_in_current_stage"] / expected, 3)
             if expected
@@ -78,9 +80,9 @@ def score_new_project(payload: NewProjectScoreRequest, db: Session = Depends(get
             "current_stage": stage,
         }
         row = pd.DataFrame([features])[artifact["features"]]
-        probability = float(artifact["pipeline"].predict_proba(row)[0, 1])
+        probability = min(float(artifact["pipeline"].predict_proba(row)[0, 1]), 0.99)
 
-        prep = artifact["pipeline"].named_steps["prep"]
+        prep = artifact.get("shap_pipeline", artifact["pipeline"]).named_steps["prep"]
         shap_values = artifact["explainer"](prep.transform(row))
         raw_values = np.asarray(shap_values.values)[0]
         if raw_values.ndim > 1:
@@ -111,6 +113,7 @@ def score_new_project(payload: NewProjectScoreRequest, db: Session = Depends(get
             "is_mock_prediction": False,
             "missing_inputs": assumed,
             "recommendations": recommend(features, top, risk_class),
+            "delay_estimate": trained_model.predict_delay_days(artifact, row),
         }
     else:
         prediction = score_features(

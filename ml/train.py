@@ -20,11 +20,15 @@ import joblib
 import numpy as np
 import pandas as pd
 import shap
+from sklearn.calibration import CalibratedClassifierCV
 from sklearn.compose import ColumnTransformer
-from sklearn.ensemble import RandomForestClassifier
+from scipy.stats import spearmanr
+from sklearn.ensemble import GradientBoostingRegressor, RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
     average_precision_score,
+    brier_score_loss,
+    mean_absolute_error,
     confusion_matrix,
     f1_score,
     precision_score,
@@ -45,6 +49,7 @@ NUMERIC_FEATURES = [
     "open_litigations",
     "resolved_litigations",
     "compensation_pct",
+    "rehabilitation_progress_pct",
     # days_in_current_stage is deliberately absent: it is stage_overrun_ratio times a
     # per-stage constant, and keeping both let the linear model split one signal into
     # two opposing coefficients — SHAP then reported schedule overrun as REDUCING risk.
@@ -59,7 +64,15 @@ TARGET = "delay_label"
 # observed_elapsed_days is EXCLUDED: it is partly an artifact of how the observation
 # window is censored in the generator, and days_in_current_stage plus
 # stage_overrun_ratio already carry the realistic timing signal.
-LEAKY_COLUMNS = ["observed_elapsed_days"]
+# observed_elapsed_days and remaining_delay_days are both excluded: the first is an
+# artifact of how the observation window is censored, the second is the target seen
+# from the other side.
+LEAKY_COLUMNS = ["observed_elapsed_days", "remaining_delay_days"]
+
+# Regression target (V2 contract Gap 1). Quantiles give the card a range instead of
+# a point estimate, which is the only defensible thing to show from synthetic data.
+REGRESSION_TARGET = "delay_days"
+QUANTILES = {"lower": 0.10, "median": 0.50, "upper": 0.90}
 
 
 def time_split(df: pd.DataFrame, test_fraction: float = 0.25):
@@ -145,22 +158,99 @@ def main() -> None:
     else:
         print("           no candidate beat the baseline — keeping it")
 
-    model = fitted[best["model"]]
+    # --- Calibration ------------------------------------------------------
+    # An uncalibrated score is not a probability, and the card puts a "%" after it.
+    # Sigmoid calibration on a held-out split, with Brier before/after so the claim
+    # is measurable rather than asserted.
+    raw_model = fitted[best["model"]]
+    raw_brier = brier_score_loss(y_test, raw_model.predict_proba(X_test)[:, 1])
+    calibrated = CalibratedClassifierCV(raw_model, method="sigmoid", cv=5)
+    calibrated.fit(X_train, y_train)
+    cal_proba = calibrated.predict_proba(X_test)[:, 1]
+    cal_brier = brier_score_loss(y_test, cal_proba)
+    cal_auc = roc_auc_score(y_test, cal_proba)
+    print(f"calibration      Brier {raw_brier:.4f} -> {cal_brier:.4f}  "
+          f"(lower is better)  AUC {best['roc_auc']:.3f} -> {cal_auc:.3f}")
+
+    use_calibrated = cal_brier <= raw_brier
+    print("  using the calibrated model" if use_calibrated
+          else "  calibration made it worse — keeping the raw model")
+
+    model = calibrated if use_calibrated else raw_model
+    calibration_metrics = {
+        "method": "sigmoid" if use_calibrated else "none",
+        "brier_raw": round(raw_brier, 4),
+        "brier_calibrated": round(cal_brier, 4),
+        "auc_calibrated": round(cal_auc, 4),
+    }
+
     version = f"{best['model']}-v1"
     trained_at = datetime.now(timezone.utc).isoformat()
 
     # Fit the SHAP explainer against the selected model. shap.Explainer dispatches to
     # LinearExplainer or TreeExplainer depending on what won, so this works either way.
-    prep = model.named_steps["prep"]
-    clf = model.named_steps["clf"]
+    # SHAP explains the underlying pipeline; the calibrator only rescales its output.
+    prep = raw_model.named_steps["prep"]
+    clf = raw_model.named_steps["clf"]
     background = prep.transform(X_train.sample(min(400, len(X_train)), random_state=42))
     feature_names_out = list(prep.get_feature_names_out())
     explainer = shap.Explainer(clf, background, feature_names=feature_names_out)
     print(f"SHAP explainer: {type(explainer).__name__} over {len(feature_names_out)} encoded features")
 
+    # --- Delay-days regressor (V2 contract Gap 1) --------------------------
+    # Three quantile models give a range rather than a false-precision point
+    # estimate. Censoring: this synthetic set has no censored projects — every one
+    # has an eventual duration — so nothing is dropped. A real dataset will have
+    # projects still running at MAX_DAYS, and those cannot be trained on this way.
+    print()
+    reg_train = train_df[train_df[REGRESSION_TARGET].notna()]
+    reg_test = test_df[test_df[REGRESSION_TARGET].notna()]
+    regressors = {}
+    for name, q in QUANTILES.items():
+        pipe = Pipeline([
+            ("prep", build_preprocessor()),
+            ("reg", GradientBoostingRegressor(
+                loss="quantile", alpha=q, n_estimators=250, max_depth=3,
+                learning_rate=0.07, random_state=42)),
+        ])
+        pipe.fit(reg_train[FEATURES], reg_train[REGRESSION_TARGET])
+        regressors[name] = pipe
+
+    pred_lo = regressors["lower"].predict(reg_test[FEATURES]).clip(0)
+    pred_md = regressors["median"].predict(reg_test[FEATURES]).clip(0)
+    pred_hi = regressors["upper"].predict(reg_test[FEATURES]).clip(0)
+    actual = reg_test[REGRESSION_TARGET].values
+
+    mae = mean_absolute_error(actual, pred_md)
+    coverage = float(((actual >= pred_lo) & (actual <= pred_hi)).mean())
+    # The class and the days must move together. A project at 82% High with 6 days
+    # predicted delay would destroy the card's credibility instantly.
+    class_proba = model.predict_proba(reg_test[FEATURES])[:, 1]
+    consistency = float(spearmanr(class_proba, pred_md).statistic)
+
+    print(f"delay regressor  MAE={mae:.0f} days  "
+          f"interval coverage={coverage:.1%} (target ~80%)  "
+          f"class/days agreement={consistency:.3f}")
+    if consistency < 0.7:
+        print("  WARNING: classifier and regressor disagree — do not show both on one card")
+
+    regression_metrics = {
+        "target": REGRESSION_TARGET,
+        "mae_days": round(mae, 1),
+        "interval": [QUANTILES["lower"], QUANTILES["upper"]],
+        "interval_coverage": round(coverage, 4),
+        "class_days_agreement": round(consistency, 4),
+        "n_train": len(reg_train),
+        "censoring": "none — synthetic projects all have an eventual duration",
+    }
+
     joblib.dump(
         {
             "pipeline": model,
+            "regressors": regressors,
+            "regression_metrics": regression_metrics,
+            "calibration": calibration_metrics,
+            "shap_pipeline": raw_model,
             "explainer": explainer,
             "feature_names_out": feature_names_out,
             "model_name": best["model"],
@@ -181,6 +271,8 @@ def main() -> None:
                 "selected": best,
                 "baseline": baseline,
                 "all_results": results,
+                "regression": regression_metrics,
+                "calibration": calibration_metrics,
                 "trained_at": trained_at,
                 "trained_on": "synthetic",
                 "delay_label": "statutory baseline, 1.5x threshold (PROVISIONAL)",

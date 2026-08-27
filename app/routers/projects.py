@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session, selectinload
 from app.database import get_db
 from app.models import AuditLog, PredictionResult, Project, ProjectFlag, ShapExplanation, WhatIfScenario
 from app.risk import current_features, score_project_auto as score_project
+from app.stages import STAGE_LABELS, days_vs_baseline, expected_days
 from app.schemas import FlagOut, FlagRequest, Prediction, ProjectDetailOut, ProjectOut, WhatIfRequest, WhatIfResponse
 
 router = APIRouter(prefix="/projects", tags=["projects"])
@@ -25,6 +26,28 @@ def _load(db: Session):
         selectinload(Project.litigations),
         selectinload(Project.compensation_records),
     )
+
+
+def _stage_rows(project) -> list:
+    """Stage history with the baseline comparison computed server-side."""
+    from datetime import datetime, timezone
+
+    rows = []
+    for s in sorted(project.stage_history, key=lambda x: x.entered_at):
+        end = s.exited_at or datetime.now(timezone.utc)
+        elapsed = max((end - s.entered_at).days, 0)
+        rows.append({
+            "id": s.id,
+            "stage": s.stage,
+            "label": STAGE_LABELS.get(s.stage, ""),
+            "entered_at": s.entered_at,
+            "exited_at": s.exited_at,
+            "days_in_stage": s.days_in_stage,
+            "expected_days": expected_days(s.stage),
+            "elapsed_days": elapsed,
+            "days_vs_baseline": days_vs_baseline(s.stage, elapsed),
+        })
+    return rows
 
 
 def _get_or_404(db: Session, project_id: int) -> Project:
@@ -102,7 +125,7 @@ def get_project(project_id: int, db: Session = Depends(get_db)):
             **project.__dict__,
             "prediction": score_project(project),
             "current_features": current_features(project),
-            "stage_history": sorted(project.stage_history, key=lambda s: s.entered_at),
+            "stage_history": _stage_rows(project),
             "litigations": project.litigations,
             "compensation_records": project.compensation_records,
         }

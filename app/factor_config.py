@@ -14,6 +14,7 @@ administrative response to a condition, and it belongs here.
 
 FEATURE_LABELS = {
     "compensation_pct": "Compensation disbursed",
+    "rehabilitation_progress_pct": "Rehabilitation progress",
     "open_litigations": "Unresolved litigation",
     "resolved_litigations": "Resolved litigation",
     "stage_overrun_ratio": "Schedule overrun",
@@ -31,6 +32,10 @@ FEATURE_LABELS = {
 
 FEATURE_PHRASES = {
     "compensation_pct": lambda v, stage: f"Compensation pending for {100 - v:.0f}% of affected families.",
+    "rehabilitation_progress_pct": lambda v, stage: (
+        f"Rehabilitation plan progress at {v:.0f}%."
+        if v >= 50 else f"Rehabilitation plan progress below 50% (at {v:.0f}%)."
+    ),
     "open_litigations": lambda v, stage: (
         "No unresolved legal disputes." if v == 0
         else f"{v:.0f} unresolved legal dispute{'s' if v != 1 else ''}."
@@ -122,6 +127,17 @@ RECOMMENDATION_RULES = [
                   "blocking item while it is still a single item.",
         "owner": "Competent Authority (LA)",
         "severity": 3,
+    },
+    {
+        "id": "rehabilitation_lag",
+        "feature": "rehabilitation_progress_pct",
+        "test": lambda v: v < 50,
+        "action": "Accelerate the rehabilitation plan",
+        "detail": "R&R progress below half. Possession cannot follow compensation while "
+                  "resettlement is outstanding, so this blocks the final stages "
+                  "regardless of how the award is progressing.",
+        "owner": "R&R administrator",
+        "severity": 2,
     },
     {
         "id": "large_displacement",
