@@ -1,23 +1,15 @@
 /**
  * Image slots for the interface.
  *
- * Every photographic slot is declared here so real photographs can be dropped in by
- * editing ONE file. Nothing else in the codebase references an image URL.
+ * Every photographic slot is declared here so photographs can be swapped by editing
+ * ONE file. Nothing else in the codebase references an image URL.
  *
- * Why they are empty by default:
- *   - We have no licensed photographs of Indian highway construction, and shipping
- *     unlicensed ones into a government-facing prototype is not a risk worth taking.
- *   - A remote image URL is a network dependency. A demo venue with bad wifi would
- *     show broken frames at the exact moment it matters.
+ * A slot with an empty `src`, or one whose file is missing or fails to load, falls
+ * back to the drawn highway scene behind the same institutional wash. Text contrast
+ * is identical either way, so a missing file is a degraded look, never a broken frame.
  *
- * With a slot empty, the section falls back to a rendered infrastructure treatment
- * (drawn highway + institutional wash) that always works offline. Set a slot and the
- * photograph appears behind the same wash, so text contrast is preserved either way.
- *
- * To use real photographs:
- *   1. Drop files into frontend/public/images/
- *   2. Point the slot at them, e.g. dashboardHero: "/images/expressway.jpg"
- *   Remote URLs work too, but see the caveat above.
+ * To change a photograph: drop a file into frontend/public/images/ and point the slot
+ * at it. See the README in that folder.
  */
 
 export interface ImageSlot {
@@ -25,30 +17,51 @@ export interface ImageSlot {
   src: string;
   /** Describe the photograph for screen readers. Ignored when src is empty. */
   alt: string;
-  /** CSS object-position, for steering the crop on wide hero frames. */
+  /**
+   * CSS object-position, for steering the crop.
+   *
+   * These bands are short and very wide, so a square or portrait source is cropped
+   * hard top and bottom. The second value picks which horizontal slice survives:
+   * a lower percentage keeps the upper part of the frame.
+   */
   position?: string;
 }
 
 export const IMAGES: Record<string, ImageSlot> = {
-  /** Dashboard hero — a wide expressway or corridor under an open sky. */
+  /**
+   * Dashboard hero. Aerial interchange, 736x736 square.
+   * The flyover and the converging carriageways sit just below centre, so the crop
+   * favours the lower-middle band.
+   */
   dashboardHero: {
-    src: "",
-    alt: "National highway corridor under construction",
-    position: "center 60%",
+    src: "/images/dashboard-hero.jpg",
+    alt: "Aerial view of a national highway interchange with an elevated flyover",
+    position: "center 58%",
   },
 
-  /** Delay-prediction banner — highway construction, earthworks, survey equipment. */
+  /**
+   * Delay-prediction banner.
+   *
+   * Deliberately empty: no clean construction photograph is available yet, and the
+   * dashboard already carries the interchange above — a second copy of the same
+   * image on one page reads as padding. The drawn scene gives the band its own
+   * character. Drop a construction photo in as prediction-banner.jpg to fill it.
+   */
   predictionBanner: {
     src: "",
     alt: "Highway construction works in progress",
     position: "center 55%",
   },
 
-  /** Landing page hero. */
+  /**
+   * Landing hero. Aerial expressway with a national flag, 736x856 portrait.
+   * The flag and the horizon are in the upper third, so the crop is pulled up to
+   * keep them rather than showing only tarmac.
+   */
   landingHero: {
-    src: "",
-    alt: "National highway stretching to the horizon",
-    position: "center 65%",
+    src: "/images/landing-hero.jpg",
+    alt: "Aerial view of a national expressway with service roads and a national flag",
+    position: "center 32%",
   },
 };
 

@@ -62,7 +62,7 @@ export default function DashboardPage() {
     <main>
       {/* ---------- Hero ---------- */}
       <PhotoFrame slot={IMAGES.dashboardHero} drawnScale="h-56">
-        <div className="mx-auto max-w-7xl px-6 py-14 sm:py-16">
+        <div className="mx-auto max-w-7xl px-6 py-16 sm:py-24">
           <p className="lw-rise lw-d1 font-mono text-[10px] uppercase tracking-[0.2em] text-white/60">
             Ministry of Road Transport &amp; Highways · Prototype
           </p>
@@ -124,8 +124,8 @@ export default function DashboardPage() {
             </div>
 
             {/* ---------- Prediction banner ---------- */}
-            <PhotoFrame slot={IMAGES.predictionBanner} className="rounded-card" drawnScale="h-40">
-              <div className="flex flex-col gap-5 px-7 py-8 md:flex-row md:items-center md:justify-between">
+            <PhotoFrame slot={IMAGES.predictionBanner} className="rounded-card" drawnScale="h-48">
+              <div className="flex flex-col gap-5 px-7 py-10 md:flex-row md:items-center md:justify-between">
                 <div className="max-w-xl">
                   <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/60">
                     Decision support
