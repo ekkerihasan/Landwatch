@@ -223,14 +223,31 @@ def main() -> None:
 
     mae = mean_absolute_error(actual, pred_md)
     coverage = float(((actual >= pred_lo) & (actual <= pred_hi)).mean())
-    # The class and the days must move together. A project at 82% High with 6 days
-    # predicted delay would destroy the card's credibility instantly.
+    # The class and the days must move together, or the card contradicts itself.
+    #
+    # Measured WITHIN each stage, deliberately. The classifier's target is RELATIVE to
+    # the stage baseline (1.5x the statutory total); the regressor's target is ABSOLUTE
+    # days. Across stages those orderings must diverge — a 3A project at 30% risk means
+    # roughly 9 days, a 3E project at the same 30% means roughly 109 — so a pooled
+    # correlation measures the wrong thing. A card shows one project at one stage, so
+    # within-stage agreement is what its credibility rests on.
     class_proba = model.predict_proba(reg_test[FEATURES])[:, 1]
-    consistency = float(spearmanr(class_proba, pred_md).statistic)
+    pooled = float(spearmanr(class_proba, pred_md).statistic)
+
+    per_stage = {}
+    for stage in reg_test["current_stage"].unique():
+        mask = (reg_test["current_stage"] == stage).values
+        if mask.sum() < 25:
+            continue
+        per_stage[stage] = float(spearmanr(class_proba[mask], pred_md[mask]).statistic)
+    weights = {s: int((reg_test["current_stage"] == s).sum()) for s in per_stage}
+    total_w = sum(weights.values()) or 1
+    consistency = sum(per_stage[s] * weights[s] for s in per_stage) / total_w
 
     print(f"delay regressor  MAE={mae:.0f} days  "
-          f"interval coverage={coverage:.1%} (target ~80%)  "
-          f"class/days agreement={consistency:.3f}")
+          f"interval coverage={coverage:.1%} (target ~80%)")
+    print(f"  class/days agreement  within-stage {consistency:.3f}  (pooled {pooled:.3f})")
+    print("  per stage: " + "  ".join(f"{s}={v:.2f}" for s, v in sorted(per_stage.items())))
     if consistency < 0.7:
         print("  WARNING: classifier and regressor disagree — do not show both on one card")
 
@@ -240,6 +257,13 @@ def main() -> None:
         "interval": [QUANTILES["lower"], QUANTILES["upper"]],
         "interval_coverage": round(coverage, 4),
         "class_days_agreement": round(consistency, 4),
+        "class_days_agreement_pooled": round(pooled, 4),
+        "class_days_agreement_by_stage": {s: round(v, 4) for s, v in per_stage.items()},
+        "agreement_note": (
+            "Measured within stage. The classifier target is relative to the stage "
+            "baseline, the regressor target is absolute days, so a pooled correlation "
+            "understates agreement. A card shows one project at one stage."
+        ),
         "n_train": len(reg_train),
         "censoring": "none — synthetic projects all have an eventual duration",
     }

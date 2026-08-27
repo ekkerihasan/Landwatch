@@ -1,71 +1,71 @@
 {
   "selected": {
     "model": "logistic_regression",
-    "roc_auc": 0.9229,
-    "pr_auc": 0.8571,
-    "recall_delayed": 0.8263,
-    "precision_delayed": 0.7414,
-    "f1_delayed": 0.7816,
+    "roc_auc": 0.8958,
+    "pr_auc": 0.8189,
+    "recall_delayed": 0.7839,
+    "precision_delayed": 0.7008,
+    "f1_delayed": 0.74,
     "confusion": {
-      "tn": 446,
-      "fp": 68,
-      "fn": 41,
-      "tp": 195
+      "tn": 435,
+      "fp": 79,
+      "fn": 51,
+      "tp": 185
     }
   },
   "baseline": {
     "model": "logistic_regression",
-    "roc_auc": 0.9229,
-    "pr_auc": 0.8571,
-    "recall_delayed": 0.8263,
-    "precision_delayed": 0.7414,
-    "f1_delayed": 0.7816,
+    "roc_auc": 0.8958,
+    "pr_auc": 0.8189,
+    "recall_delayed": 0.7839,
+    "precision_delayed": 0.7008,
+    "f1_delayed": 0.74,
     "confusion": {
-      "tn": 446,
-      "fp": 68,
-      "fn": 41,
-      "tp": 195
+      "tn": 435,
+      "fp": 79,
+      "fn": 51,
+      "tp": 185
     }
   },
   "all_results": [
     {
       "model": "logistic_regression",
-      "roc_auc": 0.9229,
-      "pr_auc": 0.8571,
-      "recall_delayed": 0.8263,
-      "precision_delayed": 0.7414,
-      "f1_delayed": 0.7816,
+      "roc_auc": 0.8958,
+      "pr_auc": 0.8189,
+      "recall_delayed": 0.7839,
+      "precision_delayed": 0.7008,
+      "f1_delayed": 0.74,
       "confusion": {
-        "tn": 446,
-        "fp": 68,
-        "fn": 41,
-        "tp": 195
+        "tn": 435,
+        "fp": 79,
+        "fn": 51,
+        "tp": 185
       }
     },
     {
       "model": "random_forest",
-      "roc_auc": 0.899,
-      "pr_auc": 0.8139,
+      "roc_auc": 0.8972,
+      "pr_auc": 0.8114,
       "recall_delayed": 0.7161,
-      "precision_delayed": 0.7348,
-      "f1_delayed": 0.7253,
+      "precision_delayed": 0.738,
+      "f1_delayed": 0.7269,
       "confusion": {
-        "tn": 453,
-        "fp": 61,
+        "tn": 454,
+        "fp": 60,
         "fn": 67,
         "tp": 169
       }
     },
     {
       "model": "xgboost",
-      "roc_auc": 0.9257,
-      "pr_auc": 0.862,
+      "roc_auc": 0.9214,
+      "pr_auc": 0.8519,
       "recall_delayed": 0.7076,
-      "precision_delayed": 0.835,
-      "f1_delayed": 0.7661,
+      "precision_delayed": 0.7915,
+      "f1_delayed": 0.7472,
       "confusion": {
-        "tn": 481,
-        "fp": 33,
+        "tn": 470,
+        "fp": 44,
         "fn": 69,
         "tp": 167
       }
@@ -73,23 +73,33 @@
   ],
   "regression": {
     "target": "delay_days",
-    "mae_days": 49.2,
+    "mae_days": 25.4,
     "interval": [
       0.1,
       0.9
     ],
-    "interval_coverage": 0.7493,
-    "class_days_agreement": 0.7772,
+    "interval_coverage": 0.768,
+    "class_days_agreement": 0.8893,
+    "class_days_agreement_pooled": 0.6745,
+    "class_days_agreement_by_stage": {
+      "3D": 0.9336,
+      "3H": 0.9103,
+      "3C": 0.8139,
+      "3E": 0.9595,
+      "3G": 0.9419,
+      "3A": 0.8188
+    },
+    "agreement_note": "Measured within stage. The classifier target is relative to the stage baseline, the regressor target is absolute days, so a pooled correlation understates agreement. A card shows one project at one stage.",
     "n_train": 2250,
     "censoring": "none \u2014 synthetic projects all have an eventual duration"
   },
   "calibration": {
     "method": "sigmoid",
-    "brier_raw": 0.1063,
-    "brier_calibrated": 0.102,
-    "auc_calibrated": 0.9229
+    "brier_raw": 0.1229,
+    "brier_calibrated": 0.1171,
+    "auc_calibrated": 0.8957
   },
-  "trained_at": "2026-08-27T05:40:26.855501+00:00",
+  "trained_at": "2026-08-27T07:26:49.480425+00:00",
   "trained_on": "synthetic",
   "delay_label": "statutory baseline, 1.5x threshold (PROVISIONAL)",
   "note": "Synthetic data \u2014 measures pipeline correctness, not real-world accuracy."

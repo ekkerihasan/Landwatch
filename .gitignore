@@ -135,3 +135,6 @@ temp/
 *.pid.lock
 coverage/
 .nyc_output/
+
+# Raw image uploads awaiting licence review — only the named slot files ship.
+frontend/public/images/image*.jpg

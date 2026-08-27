@@ -5,14 +5,7 @@ import type { StageHistoryRow } from "@/lib/types";
 // Keeping a second copy is how the tracker and the card end up disagreeing.
 const STAGES = ["3A", "3C", "3D", "3G", "3H", "3E"] as const;
 
-const FALLBACK_LABELS: Record<string, string> = {
-  "3A": "Notification of intent",
-  "3C": "Declaration",
-  "3D": "Land vests",
-  "3G": "Compensation determined",
-  "3H": "Compensation deposited",
-  "3E": "Possession taken",
-};
+import { STAGE_LABELS } from "@/lib/stages";
 
 export function StageTracker({
   history,
@@ -25,9 +18,9 @@ export function StageTracker({
   const currentIndex = STAGES.indexOf(currentStage as (typeof STAGES)[number]);
 
   return (
-    <div className="rounded-xl border bg-white p-5 shadow-sm">
-      <h2 className="text-sm font-semibold text-slate-900">Legal workflow</h2>
-      <p className="mt-0.5 text-xs text-slate-500">
+    <div className="rounded-card border bg-cream-surface p-5 shadow-card">
+      <h2 className="text-sm font-semibold text-ink">Legal workflow</h2>
+      <p className="mt-0.5 text-xs text-ink-3">
         Statutory sequence 3A → 3E. A stage running well past its expected duration is
         the strongest single delay signal.
       </p>
@@ -45,7 +38,7 @@ export function StageTracker({
               {i < STAGES.length - 1 && (
                 <span
                   className={`absolute left-[11px] top-6 h-full w-0.5 ${
-                    isDone ? "bg-teal-500" : "bg-slate-200"
+                    isDone ? "bg-risk-low" : "bg-cream-deep"
                   }`}
                   aria-hidden
                 />
@@ -54,12 +47,12 @@ export function StageTracker({
               <span
                 className={`relative z-10 mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
                   isDone
-                    ? "bg-teal-500 text-white"
+                    ? "bg-risk-low text-cream-surface"
                     : isCurrent
                     ? overdue
-                      ? "bg-red-600 text-white ring-4 ring-red-100"
-                      : "bg-slate-900 text-white ring-4 ring-slate-100"
-                    : "border-2 border-slate-200 bg-white text-slate-400"
+                      ? "bg-risk-critical text-cream-surface ring-4 ring-risk-critical/15"
+                      : "bg-forest-800 text-cream-surface ring-4 ring-forest-800/12"
+                    : "border-2 border-line bg-cream-surface text-ink-3"
                 }`}
               >
                 {isDone ? "✓" : stage.replace("3", "")}
@@ -69,16 +62,16 @@ export function StageTracker({
                 <div className="flex flex-wrap items-baseline gap-x-2">
                   <span
                     className={`font-mono text-sm font-semibold ${
-                      isCurrent ? "text-slate-900" : isDone ? "text-slate-700" : "text-slate-400"
+                      isCurrent ? "text-ink" : isDone ? "text-ink-2" : "text-ink-3"
                     }`}
                   >
                     {stage}
                   </span>
-                  <span className={`text-xs ${isCurrent || isDone ? "text-slate-600" : "text-slate-400"}`}>
-                    {row?.label || FALLBACK_LABELS[stage]}
+                  <span className={`text-xs ${isCurrent || isDone ? "text-ink-2" : "text-ink-3"}`}>
+                    {row?.label || STAGE_LABELS[stage]}
                   </span>
                   {isCurrent && (
-                    <span className="rounded bg-slate-900 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+                    <span className="rounded bg-forest-800 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-cream-surface">
                       Current
                     </span>
                   )}
@@ -86,30 +79,30 @@ export function StageTracker({
 
                 {row && (
                   <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
-                    <span className={overdue ? "font-semibold text-red-700" : "text-slate-500"}>
+                    <span className={overdue ? "font-semibold text-risk-critical" : "text-ink-3"}>
                       {row.elapsed_days} days{isCurrent ? " so far" : ""}
                     </span>
-                    <span className="text-slate-300">·</span>
-                    <span className="text-slate-400">expected ~{row.expected_days}</span>
+                    <span className="text-ink-3">·</span>
+                    <span className="text-ink-3">expected ~{row.expected_days}</span>
                     {behind > 0 && (
                       <span
                         className={`rounded px-1.5 py-0.5 font-semibold ${
                           isCurrent
-                            ? "bg-red-50 text-red-700 ring-1 ring-red-200"
-                            : "bg-slate-100 text-slate-600"
+                            ? "bg-risk-criticalBg text-risk-critical ring-1 ring-risk-critical/25"
+                            : "bg-cream-deep text-ink-2"
                         }`}
                       >
                         {behind} days behind baseline
                       </span>
                     )}
                     {behind < 0 && row.exited_at && (
-                      <span className="rounded bg-teal-50 px-1.5 py-0.5 font-medium text-teal-700">
+                      <span className="rounded bg-risk-lowBg px-1.5 py-0.5 font-medium text-risk-low">
                         {Math.abs(behind)} days inside baseline
                       </span>
                     )}
                   </div>
                 )}
-                {!row && !isDone && <p className="mt-1 text-xs text-slate-400">Not yet reached</p>}
+                {!row && !isDone && <p className="mt-1 text-xs text-ink-3">Not yet reached</p>}
               </div>
             </li>
           );

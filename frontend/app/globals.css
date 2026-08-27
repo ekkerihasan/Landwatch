@@ -2,140 +2,129 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+/*
+  LANDWATCH design tokens.
 
-  /* Landing palette — asphalt and lane-paint, drawn from the subject rather than
-     a generic brand ramp. Used only on the landing page. */
-  --asphalt-900: #070c15;
-  --asphalt-800: #0b1220;
-  --asphalt-700: #131d2f;
-  --asphalt-600: #1c2942;
-  --lane: #f5a524;      /* lane paint / signage amber */
-  --lane-soft: #fbbf5c;
-  --signal: #2dd4bf;    /* clear / low risk */
+  Restrained public-infrastructure palette: deep forest-teal as the institutional
+  colour, warm off-white grounds (never plain white), dark navy text. Risk colours
+  are the only saturated ones on the page, so severity is what draws the eye.
+*/
+
+:root {
+  /* Institutional greens */
+  --forest-900: #072a24;
+  --forest-800: #0b3b32;
+  --forest-700: #10564a;
+  --forest-600: #157a68;
+  --moss: #4a7c6f;
+  --moss-soft: #e4ede9;
+
+  /* Warm grounds — no plain white anywhere */
+  --cream: #f7f4ed;
+  --cream-deep: #efeadf;
+  --surface: #fffdf8;
+  --surface-alt: #faf7f0;
+
+  /* Text */
+  --ink: #16232b;
+  --ink-2: #47585f;
+  --ink-3: #7a8a8f;
+
+  /* Lines */
+  --line: #ded7c9;
+  --line-soft: #eae4d8;
+
+  /* Risk — the only saturated colours in the system */
+  --risk-low: #1f7a5c;
+  --risk-low-bg: #e3f1ea;
+  --risk-medium: #97690d;
+  --risk-medium-bg: #f8efd9;
+  --risk-high: #b3561d;
+  --risk-high-bg: #fae9dc;
+  --risk-critical: #9e2a20;
+  --risk-critical-bg: #f8e3e0;
+
+  --background: var(--cream);
+  --foreground: var(--ink);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--cream);
+  color: var(--ink);
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* --- Landing page motion ---------------------------------------------------- */
+/* --- Grounds ---------------------------------------------------------------- */
 
-@keyframes lw-rise {
-  from {
-    opacity: 0;
-    transform: translateY(14px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes lw-fade {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-/* Lane markings running toward the viewer. */
-@keyframes lw-lane {
-  from {
-    stroke-dashoffset: 0;
-  }
-  to {
-    stroke-dashoffset: -240;
-  }
-}
-
-/* Slow drift for the ambient glow behind the hero. */
-@keyframes lw-drift {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  50% {
-    transform: translate3d(2%, -3%, 0) scale(1.06);
-  }
-}
-
-.lw-rise {
-  opacity: 0;
-  animation: lw-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-}
-
-.lw-fade {
-  opacity: 0;
-  animation: lw-fade 1.1s ease forwards;
-}
-
-.lw-d1 { animation-delay: 0.05s; }
-.lw-d2 { animation-delay: 0.18s; }
-.lw-d3 { animation-delay: 0.31s; }
-.lw-d4 { animation-delay: 0.44s; }
-.lw-d5 { animation-delay: 0.57s; }
-.lw-d6 { animation-delay: 0.70s; }
-
-.lw-lane-dash {
-  animation: lw-lane 2.4s linear infinite;
-}
-
-.lw-drift {
-  animation: lw-drift 18s ease-in-out infinite;
-}
-
-/* --- Landing page surfaces -------------------------------------------------- */
-
-/* Asphalt gradient with a warm horizon glow — replaces the flat white ground. */
-.lw-hero {
-  background:
-    radial-gradient(120% 90% at 50% 108%, rgba(245, 165, 36, 0.22) 0%, transparent 58%),
-    radial-gradient(90% 70% at 12% 0%, rgba(45, 212, 191, 0.12) 0%, transparent 55%),
-    linear-gradient(180deg, var(--asphalt-900) 0%, var(--asphalt-800) 45%, var(--asphalt-700) 100%);
-}
-
-/* Fine surveyor's grid — structure without decoration. */
-.lw-grid {
-  background-image:
-    linear-gradient(to right, rgba(148, 163, 184, 0.08) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
-  background-size: 56px 56px;
-}
-
-/* Light section that is not flat white. */
+/* Warm paper with a barely-there institutional tint. Replaces flat white. */
 .lw-paper {
   background:
-    radial-gradient(70% 55% at 88% 0%, rgba(245, 165, 36, 0.07) 0%, transparent 60%),
-    radial-gradient(60% 50% at 4% 100%, rgba(45, 212, 191, 0.08) 0%, transparent 60%),
-    linear-gradient(180deg, #ffffff 0%, #f4f7fa 100%);
+    radial-gradient(80% 60% at 92% 0%, rgba(21, 122, 104, 0.05) 0%, transparent 62%),
+    radial-gradient(70% 55% at 2% 100%, rgba(11, 59, 50, 0.04) 0%, transparent 60%),
+    linear-gradient(180deg, var(--surface) 0%, var(--surface-alt) 100%);
 }
 
-/* Grain, so large gradient fields do not band on a projector. */
+/* Deep institutional ground for the hero and the prediction banner. */
+.lw-forest {
+  background:
+    radial-gradient(90% 80% at 78% 110%, rgba(21, 122, 104, 0.42) 0%, transparent 60%),
+    linear-gradient(140deg, var(--forest-900) 0%, var(--forest-800) 55%, var(--forest-700) 100%);
+}
+
+/* Surveyor's rule, used sparingly behind dark sections. */
+.lw-grid {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+/* Grain, so large flat fields do not band on a projector. */
 .lw-grain::after {
   content: "";
   position: absolute;
   inset: 0;
   pointer-events: none;
-  opacity: 0.32;
+  opacity: 0.26;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .lw-rise,
-  .lw-fade {
-    opacity: 1;
-    animation: none;
-    transform: none;
-  }
-  .lw-lane-dash,
-  .lw-drift {
-    animation: none;
-  }
+/* Photograph slot: a dark institutional wash so text stays legible over any image
+   dropped in via lib/assets.ts. Works with or without a photograph behind it. */
+.lw-photo-wash {
+  background:
+    linear-gradient(90deg, rgba(7, 42, 36, 0.94) 0%, rgba(7, 42, 36, 0.78) 45%, rgba(11, 59, 50, 0.5) 100%);
 }
+
+/* --- Motion — restrained, and only on first paint --------------------------- */
+
+@keyframes lw-rise {
+  from { opacity: 0; transform: translateY(9px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.lw-rise { opacity: 0; animation: lw-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+.lw-d1 { animation-delay: 0.04s; }
+.lw-d2 { animation-delay: 0.12s; }
+.lw-d3 { animation-delay: 0.2s; }
+.lw-d4 { animation-delay: 0.28s; }
+
+/* Lane markings on the drawn highway. */
+@keyframes lw-lane {
+  from { stroke-dashoffset: 0; }
+  to   { stroke-dashoffset: -240; }
+}
+.lw-lane-dash { animation: lw-lane 3.2s linear infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .lw-rise { opacity: 1; animation: none; transform: none; }
+  .lw-lane-dash { animation: none; }
+}
+
+/* --- Utilities -------------------------------------------------------------- */
+
+.lw-hairline { border-color: var(--line); }
+
+/* Tabular figures wherever numbers line up in columns. */
+.lw-nums { font-variant-numeric: tabular-nums; }
