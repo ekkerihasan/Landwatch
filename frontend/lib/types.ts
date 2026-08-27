@@ -11,6 +11,15 @@ export interface RiskFactor {
   explanation: string;
 }
 
+export interface Recommendation {
+  id: string;
+  action: string;
+  detail: string;
+  owner: string;
+  severity: number;
+  triggered_by: string;
+}
+
 // From GET /projects/{id}/predict. While `is_mock_prediction` is true this comes
 // from the interim rule in app/risk.py, not a trained model.
 export interface Prediction {
@@ -21,6 +30,8 @@ export interface Prediction {
   is_mock_prediction: boolean;
   // Inputs the model had no data for — a neutral value was substituted.
   missing_inputs: string[];
+  // Deterministic rule output, not model output.
+  recommendations: Recommendation[];
 }
 
 export interface Project {
@@ -94,6 +105,7 @@ export interface Flag {
 export interface NewProjectEstimate {
   prediction: Prediction;
   inputs: Record<string, unknown>;
+  assumed_inputs: string[];
   is_estimate: boolean;
   disclaimer: string;
 }

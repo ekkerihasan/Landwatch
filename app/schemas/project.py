@@ -11,6 +11,17 @@ class RiskFactor(BaseModel):
     explanation: str
 
 
+class Recommendation(BaseModel):
+    """Administrative action mapped from a measured condition. Not model output."""
+
+    id: str
+    action: str
+    detail: str
+    owner: str
+    severity: int
+    triggered_by: str
+
+
 class Prediction(BaseModel):
     risk_class: str
     probability: float
@@ -20,6 +31,8 @@ class Prediction(BaseModel):
     # Inputs the model had no data for — a neutral value was substituted, so the
     # score is less certain than the number alone suggests.
     missing_inputs: List[str] = []
+    # Deterministic rule output, not model output — see app/factor_config.py
+    recommendations: List[Recommendation] = []
 
 
 class StageHistoryOut(BaseModel):
@@ -177,16 +190,20 @@ class NewProjectScoreRequest(BaseModel):
     latitude: Optional[float] = Field(default=None, ge=-90, le=90)
     longitude: Optional[float] = Field(default=None, ge=-180, le=180)
     sector: str = Field(default="National Highway", max_length=100)
-    area: float = Field(ge=0, default=50)
-    paf_count: int = Field(ge=0, default=100)
     current_stage: str = Field(default="3A", pattern="^(3A|3C|3D|3G|3H|3E)$")
-    days_in_current_stage: float = Field(ge=0, default=0)
-    expected_litigations: float = Field(ge=0, default=0)
-    planned_compensation_pct: float = Field(ge=0, le=100, default=0)
+    # All of these are optional. Left blank, a typical value is assumed and named in
+    # `assumed_inputs`, so a location alone still returns something honest.
+    area: Optional[float] = Field(default=None, ge=0)
+    paf_count: Optional[int] = Field(default=None, ge=0)
+    days_in_current_stage: Optional[float] = Field(default=None, ge=0)
+    expected_litigations: Optional[float] = Field(default=None, ge=0)
+    planned_compensation_pct: Optional[float] = Field(default=None, ge=0, le=100)
 
 
 class NewProjectScoreResponse(BaseModel):
     prediction: Prediction
     inputs: dict
+    # Fields the officer left blank, for which a typical value was assumed.
+    assumed_inputs: List[str] = []
     is_estimate: bool = True
     disclaimer: str

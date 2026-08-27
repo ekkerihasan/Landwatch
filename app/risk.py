@@ -7,6 +7,8 @@ SHAP values; the return shape and every caller stay unchanged.
 """
 from datetime import datetime, timezone
 
+from app.factor_config import recommend
+
 # Rough statutory/expected days per stage — placeholder until the mentor confirms
 # the delay-label definition (prd.md §9).
 STAGE_EXPECTED_DAYS = {"3A": 60, "3C": 90, "3D": 120, "3G": 90, "3H": 60, "3E": 45}
@@ -122,6 +124,15 @@ def score_features(features: dict, stage: str) -> dict:
         "model_version": MODEL_VERSION,
         "is_mock_prediction": True,
         "missing_inputs": [],
+        "recommendations": recommend(
+            {
+                "compensation_pct": compensation,
+                "open_litigations": litigations,
+                "stage_overrun_ratio": round(days / expected, 3) if expected else 0.0,
+            },
+            factors,
+            risk_class,
+        ),
     }
 
 

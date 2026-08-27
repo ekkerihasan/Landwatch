@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { FactorPanel } from "@/components/FactorPanel";
 import { FlagButton } from "@/components/FlagButton";
+import { RecommendationPanel } from "@/components/RecommendationPanel";
 import { RecordPanel } from "@/components/RecordPanel";
 import { RiskBadge } from "@/components/RiskBadge";
 import { StageTracker } from "@/components/StageTracker";
@@ -114,6 +115,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
         <StageTracker history={project.stage_history} currentStage={project.current_stage} />
         <div className="space-y-5">
           <FactorPanel prediction={project.prediction} />
+          <RecommendationPanel recommendations={project.prediction.recommendations} />
           <WhatIfPanel projectId={project.project_id} baseline={project.current_features} />
           <RecordPanel project={project} />
         </div>
