@@ -1,5 +1,6 @@
 from app.schemas.project import (
     CompensationCreate,
+    DelayEstimate,
     CompensationRecordOut,
     CurrentFeatures,
     FlagOut,
@@ -23,6 +24,7 @@ from app.schemas.project import (
 
 __all__ = [
     "CompensationCreate",
+    "DelayEstimate",
     "CompensationRecordOut",
     "CurrentFeatures",
     "FlagOut",

@@ -11,6 +11,17 @@ export interface RiskFactor {
   explanation: string;
 }
 
+// Predicted overrun as a RANGE. A point estimate to the day, from a model trained on
+// synthetic data, is not defensible — so the API returns quantiles.
+export interface DelayEstimate {
+  lower_days: number;
+  median_days: number;
+  upper_days: number;
+  mae_days: number | null;
+  interval_coverage: number | null;
+}
+
+// Deterministic rule output from app/factor_config.py — NOT model output.
 export interface Recommendation {
   id: string;
   action: string;
@@ -20,8 +31,7 @@ export interface Recommendation {
   triggered_by: string;
 }
 
-// From GET /projects/{id}/predict. While `is_mock_prediction` is true this comes
-// from the interim rule in app/risk.py, not a trained model.
+// From GET /projects/{id}/predict.
 export interface Prediction {
   risk_class: RiskLevel;
   probability: number;
@@ -30,8 +40,8 @@ export interface Prediction {
   is_mock_prediction: boolean;
   // Inputs the model had no data for — a neutral value was substituted.
   missing_inputs: string[];
-  // Deterministic rule output, not model output.
   recommendations: Recommendation[];
+  delay_estimate: DelayEstimate | null;
 }
 
 export interface Project {
@@ -44,6 +54,7 @@ export interface Project {
   current_stage: AcquisitionStage | string;
   latitude: number | null;
   longitude: number | null;
+  rehabilitation_progress_pct: number | null;
   created_at: string; // ISO 8601
   prediction: Prediction;
 }
@@ -58,9 +69,15 @@ export interface CurrentFeatures {
 export interface StageHistoryRow {
   id: number;
   stage: string;
+  label: string;
   entered_at: string;
   exited_at: string | null;
   days_in_stage: number | null;
+  // Derived server-side from app/stages.py — the frontend holds no copy of the
+  // statutory durations, so the two can never disagree.
+  expected_days: number;
+  elapsed_days: number;
+  days_vs_baseline: number;
 }
 
 export interface LitigationRow {
@@ -119,4 +136,5 @@ export interface ProjectCreatePayload {
   current_stage?: string;
   latitude?: number | null;
   longitude?: number | null;
+  rehabilitation_progress_pct?: number | null;
 }

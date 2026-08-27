@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { ProjectCard } from "@/components/ProjectCard";
 import { ProjectTable } from "@/components/ProjectTable";
 import { RISK_ORDER } from "@/components/RiskBadge";
 import { fetchProjects } from "@/lib/api";
@@ -15,6 +16,7 @@ export default function RiskDashboard() {
   const [filterStage, setFilterStage] = useState<string>("all");
   const [filterLocation, setFilterLocation] = useState<string>("all");
   const [sortBy, setSortBy] = useState<"risk" | "created_at" | "name">("risk");
+  const [view, setView] = useState<"cards" | "table">("cards");
 
   useEffect(() => {
     let cancelled = false;
@@ -187,6 +189,31 @@ export default function RiskDashboard() {
             <option value="name">Name (A→Z)</option>
           </select>
         </label>
+        <div className="ml-auto flex flex-col gap-1 text-xs font-medium text-slate-600">
+          View
+          <div className="flex overflow-hidden rounded border border-slate-200">
+            <button
+              onClick={() => setView("cards")}
+              className={
+                view === "cards"
+                  ? "bg-slate-900 px-3 py-1.5 text-sm text-white"
+                  : "bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
+              }
+            >
+              Cards
+            </button>
+            <button
+              onClick={() => setView("table")}
+              className={
+                view === "table"
+                  ? "bg-slate-900 px-3 py-1.5 text-sm text-white"
+                  : "bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
+              }
+            >
+              Table
+            </button>
+          </div>
+        </div>
         {(filterSector !== "all" || filterStage !== "all" || filterLocation !== "all") && (
           <button
             onClick={() => {
@@ -201,8 +228,23 @@ export default function RiskDashboard() {
         )}
       </div>
 
-      {/* Table / Cards */}
-      <ProjectTable projects={filteredAndSorted} />
+      {/* The output contract's card, one per project, ranked worst-first. The table
+          stays available for scanning a long list. */}
+      {view === "cards" ? (
+        filteredAndSorted.length === 0 ? (
+          <div className="rounded-lg border border-dashed bg-white p-12 text-center text-sm text-slate-500">
+            No projects match these filters.
+          </div>
+        ) : (
+          <div className="grid gap-4 xl:grid-cols-2">
+            {filteredAndSorted.map((p) => (
+              <ProjectCard key={p.project_id} project={p} />
+            ))}
+          </div>
+        )
+      ) : (
+        <ProjectTable projects={filteredAndSorted} />
+      )}
 
       {/* Footnote — explainability placeholder per PRD + Design Brief */}
       <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-xs leading-relaxed text-slate-600">

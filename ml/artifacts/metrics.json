@@ -1,77 +1,95 @@
 {
   "selected": {
     "model": "logistic_regression",
-    "roc_auc": 0.9066,
-    "pr_auc": 0.8555,
-    "recall_delayed": 0.8352,
-    "precision_delayed": 0.7194,
-    "f1_delayed": 0.773,
+    "roc_auc": 0.9229,
+    "pr_auc": 0.8571,
+    "recall_delayed": 0.8263,
+    "precision_delayed": 0.7414,
+    "f1_delayed": 0.7816,
     "confusion": {
-      "tn": 396,
-      "fp": 87,
-      "fn": 44,
-      "tp": 223
+      "tn": 446,
+      "fp": 68,
+      "fn": 41,
+      "tp": 195
     }
   },
   "baseline": {
     "model": "logistic_regression",
-    "roc_auc": 0.9066,
-    "pr_auc": 0.8555,
-    "recall_delayed": 0.8352,
-    "precision_delayed": 0.7194,
-    "f1_delayed": 0.773,
+    "roc_auc": 0.9229,
+    "pr_auc": 0.8571,
+    "recall_delayed": 0.8263,
+    "precision_delayed": 0.7414,
+    "f1_delayed": 0.7816,
     "confusion": {
-      "tn": 396,
-      "fp": 87,
-      "fn": 44,
-      "tp": 223
+      "tn": 446,
+      "fp": 68,
+      "fn": 41,
+      "tp": 195
     }
   },
   "all_results": [
     {
       "model": "logistic_regression",
-      "roc_auc": 0.9066,
-      "pr_auc": 0.8555,
-      "recall_delayed": 0.8352,
-      "precision_delayed": 0.7194,
-      "f1_delayed": 0.773,
+      "roc_auc": 0.9229,
+      "pr_auc": 0.8571,
+      "recall_delayed": 0.8263,
+      "precision_delayed": 0.7414,
+      "f1_delayed": 0.7816,
       "confusion": {
-        "tn": 396,
-        "fp": 87,
-        "fn": 44,
-        "tp": 223
+        "tn": 446,
+        "fp": 68,
+        "fn": 41,
+        "tp": 195
       }
     },
     {
       "model": "random_forest",
-      "roc_auc": 0.8969,
-      "pr_auc": 0.8519,
-      "recall_delayed": 0.7753,
-      "precision_delayed": 0.7393,
-      "f1_delayed": 0.7569,
+      "roc_auc": 0.899,
+      "pr_auc": 0.8139,
+      "recall_delayed": 0.7161,
+      "precision_delayed": 0.7348,
+      "f1_delayed": 0.7253,
       "confusion": {
-        "tn": 410,
-        "fp": 73,
-        "fn": 60,
-        "tp": 207
+        "tn": 453,
+        "fp": 61,
+        "fn": 67,
+        "tp": 169
       }
     },
     {
       "model": "xgboost",
-      "roc_auc": 0.9114,
-      "pr_auc": 0.8634,
-      "recall_delayed": 0.7416,
-      "precision_delayed": 0.7952,
-      "f1_delayed": 0.7674,
+      "roc_auc": 0.9257,
+      "pr_auc": 0.862,
+      "recall_delayed": 0.7076,
+      "precision_delayed": 0.835,
+      "f1_delayed": 0.7661,
       "confusion": {
-        "tn": 432,
-        "fp": 51,
+        "tn": 481,
+        "fp": 33,
         "fn": 69,
-        "tp": 198
+        "tp": 167
       }
     }
   ],
-  "trained_at": "2026-08-27T03:26:32.166433+00:00",
+  "regression": {
+    "target": "delay_days",
+    "mae_days": 49.2,
+    "interval": [
+      0.1,
+      0.9
+    ],
+    "interval_coverage": 0.7493,
+    "class_days_agreement": 0.7772,
+    "n_train": 2250,
+    "censoring": "none \u2014 synthetic projects all have an eventual duration"
+  },
+  "calibration": {
+    "method": "sigmoid",
+    "brier_raw": 0.1063,
+    "brier_calibrated": 0.102,
+    "auc_calibrated": 0.9229
+  },
+  "trained_at": "2026-08-27T05:40:26.855501+00:00",
   "trained_on": "synthetic",
   "delay_label": "statutory baseline, 1.5x threshold (PROVISIONAL)",
   "note": "Synthetic data \u2014 measures pipeline correctness, not real-world accuracy."

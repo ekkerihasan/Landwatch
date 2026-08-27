@@ -1,26 +1,18 @@
 import type { StageHistoryRow } from "@/lib/types";
 
-// The statutory sequence from the PRD — 3A→3C→3D→3G→3H/3E.
+// The statutory sequence. The expected DURATIONS are not duplicated here — the API
+// sends expected_days and days_vs_baseline on each row, computed from app/stages.py.
+// Keeping a second copy is how the tracker and the card end up disagreeing.
 const STAGES = ["3A", "3C", "3D", "3G", "3H", "3E"] as const;
 
-const STAGE_LABELS: Record<string, string> = {
+const FALLBACK_LABELS: Record<string, string> = {
   "3A": "Notification of intent",
   "3C": "Declaration",
-  "3D": "Land acquired",
+  "3D": "Land vests",
   "3G": "Compensation determined",
   "3H": "Compensation deposited",
   "3E": "Possession taken",
 };
-
-// Expected duration per stage — mirrors STAGE_EXPECTED_DAYS in app/risk.py.
-const EXPECTED_DAYS: Record<string, number> = {
-  "3A": 60, "3C": 90, "3D": 120, "3G": 90, "3H": 60, "3E": 45,
-};
-
-function daysBetween(from: string, to: string | null) {
-  const end = to ? new Date(to).getTime() : Date.now();
-  return Math.max(Math.round((end - new Date(from).getTime()) / 86_400_000), 0);
-}
 
 export function StageTracker({
   history,
@@ -45,13 +37,11 @@ export function StageTracker({
           const row = byStage.get(stage);
           const isCurrent = i === currentIndex;
           const isDone = i < currentIndex;
-          const days = row ? daysBetween(row.entered_at, row.exited_at) : null;
-          const expected = EXPECTED_DAYS[stage];
-          const overdue = isCurrent && days != null && days > expected;
+          const behind = row ? row.days_vs_baseline : 0;
+          const overdue = isCurrent && behind > 0;
 
           return (
             <li key={stage} className="relative flex gap-3 pb-5 last:pb-0">
-              {/* connector */}
               {i < STAGES.length - 1 && (
                 <span
                   className={`absolute left-[11px] top-6 h-full w-0.5 ${
@@ -60,7 +50,7 @@ export function StageTracker({
                   aria-hidden
                 />
               )}
-              {/* marker — shape differs by state, not just colour (Design Brief §4) */}
+              {/* Marker shape differs by state, not only colour (Design Brief §4) */}
               <span
                 className={`relative z-10 mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
                   isDone
@@ -85,7 +75,7 @@ export function StageTracker({
                     {stage}
                   </span>
                   <span className={`text-xs ${isCurrent || isDone ? "text-slate-600" : "text-slate-400"}`}>
-                    {STAGE_LABELS[stage]}
+                    {row?.label || FALLBACK_LABELS[stage]}
                   </span>
                   {isCurrent && (
                     <span className="rounded bg-slate-900 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
@@ -94,16 +84,27 @@ export function StageTracker({
                   )}
                 </div>
 
-                {days != null && (
+                {row && (
                   <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
                     <span className={overdue ? "font-semibold text-red-700" : "text-slate-500"}>
-                      {days} days{isCurrent ? " so far" : ""}
+                      {row.elapsed_days} days{isCurrent ? " so far" : ""}
                     </span>
                     <span className="text-slate-300">·</span>
-                    <span className="text-slate-400">expected ~{expected}</span>
-                    {overdue && (
-                      <span className="rounded bg-red-50 px-1.5 py-0.5 font-semibold text-red-700 ring-1 ring-red-200">
-                        {Math.round((days / expected - 1) * 100)}% over
+                    <span className="text-slate-400">expected ~{row.expected_days}</span>
+                    {behind > 0 && (
+                      <span
+                        className={`rounded px-1.5 py-0.5 font-semibold ${
+                          isCurrent
+                            ? "bg-red-50 text-red-700 ring-1 ring-red-200"
+                            : "bg-slate-100 text-slate-600"
+                        }`}
+                      >
+                        {behind} days behind baseline
+                      </span>
+                    )}
+                    {behind < 0 && row.exited_at && (
+                      <span className="rounded bg-teal-50 px-1.5 py-0.5 font-medium text-teal-700">
+                        {Math.abs(behind)} days inside baseline
                       </span>
                     )}
                   </div>

@@ -17,6 +17,7 @@ from app.models import (
     Litigation,
     Project,
 )
+from app.routers.projects import _stage_rows
 from app.schemas import (
     CompensationCreate,
     CompensationRecordOut,
@@ -61,7 +62,7 @@ def _detail(project: Project) -> ProjectDetailOut:
         **project.__dict__,
         "prediction": score_project_auto(project),
         "current_features": current_features(project),
-        "stage_history": sorted(project.stage_history, key=lambda s: s.entered_at),
+        "stage_history": _stage_rows(project),
         "litigations": project.litigations,
         "compensation_records": project.compensation_records,
     })
@@ -142,8 +143,7 @@ def advance_stage(project_id: int, payload: StageAdvance, db: Session = Depends(
     _audit(db, "advance_stage", "project", project_id, {"to": payload.stage})
     db.commit()
 
-    refreshed = _get_or_404(db, project_id)
-    return sorted(refreshed.stage_history, key=lambda s: s.entered_at)
+    return _stage_rows(_get_or_404(db, project_id))
 
 
 @router.post("/{project_id}/litigation", response_model=LitigationOut, status_code=201)

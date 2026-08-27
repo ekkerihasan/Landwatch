@@ -12,18 +12,11 @@ Changing DELAY_THRESHOLD changes the target and therefore the whole model. It is
 defined here, once, so the mentor conversation has exactly one thing to point at.
 """
 
-# Mirrors STAGE_EXPECTED_DAYS in app/risk.py — placeholder durations.
-STAGE_EXPECTED_DAYS = {"3A": 60, "3C": 90, "3D": 120, "3G": 90, "3H": 60, "3E": 45}
-STAGE_SEQUENCE = ["3A", "3C", "3D", "3G", "3H", "3E"]
+# Single source: app/stages.py
+from app.stages import STAGE_EXPECTED_DAYS, STAGE_SEQUENCE, expected_total_days  # noqa: F401
 
 # A project is "significantly delayed" once it exceeds the statutory baseline by 50%.
 DELAY_THRESHOLD = 1.5
-
-
-def expected_total_days(current_stage: str) -> int:
-    """Statutory days a project should have needed to reach its current stage."""
-    idx = STAGE_SEQUENCE.index(current_stage)
-    return sum(STAGE_EXPECTED_DAYS[s] for s in STAGE_SEQUENCE[: idx + 1])
 
 
 def is_delayed(actual_elapsed_days: float, current_stage: str) -> int:

@@ -18,6 +18,10 @@ class Project(Base):
     # Map coordinates — nullable because existing records predate the map view.
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
+    # Rehabilitation & resettlement progress, 0-100. Nullable: "not recorded" is not
+    # "zero progress". Kept on the project rather than as a time series for now —
+    # promote it to its own table when R&R milestones need dates.
+    rehabilitation_progress_pct = Column(Float, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     # Relationships

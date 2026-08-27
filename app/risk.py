@@ -9,9 +9,8 @@ from datetime import datetime, timezone
 
 from app.factor_config import recommend
 
-# Rough statutory/expected days per stage — placeholder until the mentor confirms
-# the delay-label definition (prd.md §9).
-STAGE_EXPECTED_DAYS = {"3A": 60, "3C": 90, "3D": 120, "3G": 90, "3H": 60, "3E": 45}
+# Single source: app/stages.py. Re-exported so existing callers keep working.
+from app.stages import STAGE_EXPECTED_DAYS, expected_days  # noqa: F401
 
 WEIGHT_STAGE_OVERRUN = 0.45
 WEIGHT_LITIGATION = 0.30
@@ -40,6 +39,9 @@ def days_in_current_stage(project) -> int:
 # scoring absence as 0% makes every newly created project look Critical.
 NEUTRAL_COMPENSATION_PCT = 58.0
 
+# Same reasoning for R&R progress: "not recorded" is not "no progress".
+NEUTRAL_REHABILITATION_PCT = 49.0
+
 
 def latest_compensation_pct(project):
     """Most recent compensation percentage, or None when nothing is recorded."""
@@ -57,6 +59,8 @@ def missing_inputs(project) -> list:
     missing = []
     if latest_compensation_pct(project) is None:
         missing.append("compensation_pct")
+    if getattr(project, "rehabilitation_progress_pct", None) is None:
+        missing.append("rehabilitation_progress_pct")
     if not project.stage_history:
         missing.append("days_in_current_stage")
     return missing
@@ -69,6 +73,11 @@ def current_features(project) -> dict:
         "days_in_current_stage": days_in_current_stage(project),
         "open_litigations": open_litigation_count(project),
         "compensation_pct": NEUTRAL_COMPENSATION_PCT if compensation is None else compensation,
+        "rehabilitation_progress_pct": (
+            NEUTRAL_REHABILITATION_PCT
+            if getattr(project, "rehabilitation_progress_pct", None) is None
+            else project.rehabilitation_progress_pct
+        ),
     }
 
 
@@ -172,7 +181,7 @@ def score_project_auto(project, overrides: dict | None = None) -> dict:
         features["stage_overrun_ratio"] = round(features["days_in_current_stage"] / expected, 3)
 
     row = pd.DataFrame([features])[artifact["features"]]
-    probability = float(artifact["pipeline"].predict_proba(row)[0, 1])
+    probability = min(float(artifact["pipeline"].predict_proba(row)[0, 1]), 0.99)
     base = trained_model.predict(project)
     base["risk_class"] = trained_model._risk_class(probability)
     base["probability"] = round(probability, 4)
