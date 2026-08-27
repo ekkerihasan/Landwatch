@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { ProjectTable } from "@/components/ProjectTable";
+import { RISK_ORDER } from "@/components/RiskBadge";
 import { fetchProjects } from "@/lib/api";
 import type { Project } from "@/lib/types";
 
@@ -52,12 +53,13 @@ export default function RiskDashboard() {
     if (filterStage !== "all") out = out.filter((p) => p.current_stage === filterStage);
     if (filterLocation !== "all") out = out.filter((p) => p.location === filterLocation);
 
-    // Simple deterministic risk rank for demo (replace with real risk_class from API)
-    const riskRank: Record<string, number> = { Critical: 4, High: 3, Medium: 2, Low: 1 };
-    const mockRisk = (id: number) => ["Low", "Medium", "High", "Critical"][id % 4] as string;
-
     if (sortBy === "risk") {
-      out.sort((a, b) => riskRank[mockRisk(b.project_id)] - riskRank[mockRisk(a.project_id)]);
+      // Rank by the prediction the API returned, not a placeholder.
+      out.sort(
+        (a, b) =>
+          RISK_ORDER[b.prediction.risk_class] - RISK_ORDER[a.prediction.risk_class] ||
+          b.prediction.probability - a.prediction.probability
+      );
     } else if (sortBy === "created_at") {
       out.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     } else if (sortBy === "name") {
@@ -102,8 +104,8 @@ export default function RiskDashboard() {
           {/* Provenance label — Design Brief §4: every AI view distinguishes demo vs ground truth */}
           <p className="mt-2 inline-flex items-center gap-2 rounded bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800 ring-1 ring-amber-200">
             <span className="h-2 w-2 rounded-full bg-amber-500" /> Source:{" "}
-            {source === "api" ? "Live API — GET /projects" : "Mock JSON — /mock-projects.json"} • 5 demo Projects
-            shaped per datamodel.md
+            {source === "api" ? "Live API — GET /projects" : "Mock JSON — /mock-projects.json"} • Synthetic
+            demo data • Risk from a model trained on synthetic data
           </p>
         </div>
         <div className="flex items-center gap-2 text-xs text-slate-500">
@@ -199,10 +201,12 @@ export default function RiskDashboard() {
           in <code className="rounded bg-white px-1 py-0.5">technicaldesign.md §3</code>. Each row is a{" "}
           <code className="rounded bg-white px-1 py-0.5">Project</code> per{" "}
           <code className="rounded bg-white px-1 py-0.5">datamodel.md</code> (project_id, name, location, sector,
-          area, paf_count, current_stage, created_at). Risk badges are mock-ranked for layout — live predictions
-          will come from <code className="rounded bg-white px-1 py-0.5">GET /projects/&#123;id&#125;/predict</code>{" "}
-          and SHAP explanations from <code className="rounded bg-white px-1 py-0.5">/explain</code>. No auth yet —
-          role-based access (Officer/Supervisor/Admin) will gate this view later.
+          area, paf_count, current_stage, created_at). Risk badges come from{" "}
+          <code className="rounded bg-white px-1 py-0.5">GET /projects/&#123;id&#125;/predict</code>, served by a
+          logistic-regression model selected over Random Forest and XGBoost on recall for the delayed class
+          (AUC 0.907). Explanations are real SHAP values. The model is{" "}
+          <strong>trained on synthetic data</strong> — it demonstrates the pipeline end to end and says
+          nothing about real-world accuracy until a validated labelled dataset exists (PRD §8).
         </p>
       </div>
     </div>

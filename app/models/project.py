@@ -27,3 +27,16 @@ class Project(Base):
     compensation_records = relationship(
         "CompensationRecord", back_populates="project", cascade="all, delete-orphan"
     )
+    feature_snapshots = relationship(
+        "ProjectFeatureSnapshot", back_populates="project", cascade="all, delete-orphan"
+    )
+    predictions = relationship(
+        "PredictionResult", back_populates="project", cascade="all, delete-orphan"
+    )
+    what_if_scenarios = relationship(
+        "WhatIfScenario", back_populates="project", cascade="all, delete-orphan"
+    )
+    delay_outcomes = relationship(
+        "DelayOutcome", back_populates="project", cascade="all, delete-orphan"
+    )
+    flags = relationship("ProjectFlag", back_populates="project", cascade="all, delete-orphan")
