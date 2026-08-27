@@ -15,6 +15,9 @@ class Project(Base):
     area = Column(Float, nullable=True)  # hectares or sq.m
     paf_count = Column(Integer, nullable=True)  # Project Affected Families
     current_stage = Column(String(10), nullable=False, index=True)  # 3A/3C/3D/3G/3H/3E
+    # Map coordinates — nullable because existing records predate the map view.
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     # Relationships

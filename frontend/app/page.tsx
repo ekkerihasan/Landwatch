@@ -1,214 +1,227 @@
-"use client";
+import Link from "next/link";
+import { HighwayScene } from "@/components/HighwayScene";
 
-import { useEffect, useMemo, useState } from "react";
-import { ProjectTable } from "@/components/ProjectTable";
-import { RISK_ORDER } from "@/components/RiskBadge";
-import { fetchProjects } from "@/lib/api";
-import type { Project } from "@/lib/types";
+const STAGES = [
+  { code: "3A", label: "Notification" },
+  { code: "3C", label: "Declaration" },
+  { code: "3D", label: "Land vests" },
+  { code: "3G", label: "Compensation set" },
+  { code: "3H", label: "Deposited" },
+  { code: "3E", label: "Possession" },
+];
 
-export default function RiskDashboard() {
-  const [projects, setProjects] = useState<Project[] | null>(null);
-  const [source, setSource] = useState<"api" | "mock" | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [filterSector, setFilterSector] = useState<string>("all");
-  const [filterStage, setFilterStage] = useState<string>("all");
-  const [filterLocation, setFilterLocation] = useState<string>("all");
-  const [sortBy, setSortBy] = useState<"risk" | "created_at" | "name">("risk");
+const CAPABILITIES = [
+  {
+    n: "01",
+    title: "Rank the caseload",
+    body: "Every project scored Low to Critical, hardest-hit first, so limited attention goes where it changes an outcome.",
+    accent: "text-amber-400",
+  },
+  {
+    n: "02",
+    title: "Show the reasoning",
+    body: "No score appears without the factors behind it — compensation stalled, litigation open, a stage past its statutory duration.",
+    accent: "text-teal-300",
+  },
+  {
+    n: "03",
+    title: "Recommend the response",
+    body: "Each condition maps to an owned action: verify compensation, escalate to the legal cell, convene a district review.",
+    accent: "text-amber-400",
+  },
+  {
+    n: "04",
+    title: "Test it before committing",
+    body: "Move compensation or clear a case in the simulator and watch the score respond, before spending anything in the field.",
+    accent: "text-teal-300",
+  },
+];
 
-  useEffect(() => {
-    let cancelled = false;
-    // Calls GET /projects per technicaldesign.md §3 — with mock fallback
-    fetchProjects()
-      .then(({ projects, source }) => {
-        if (!cancelled) {
-          setProjects(projects);
-          setSource(source);
-        }
-      })
-      .catch((e) => {
-        if (!cancelled) setError(e instanceof Error ? e.message : String(e));
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+const DISCLAIMERS = [
+  {
+    head: "It is not validated on real data.",
+    body: "Every project here is synthetic and the model is trained on synthetic data. That demonstrates the pipeline works — it is not evidence the system predicts real delays.",
+  },
+  {
+    head: "It does not prove cause.",
+    body: "The factors behind a score show what moved it, not what will fix it. Low compensation may be the cause of a stall, or a symptom of the dispute causing it.",
+  },
+  {
+    head: "It does not predict dates.",
+    body: "The output is a risk band and a probability, never a completion date or an exact number of days late.",
+  },
+  {
+    head: "It does not act.",
+    body: "No endpoint triggers anything in the outside world. Every path ends in a decision a human officer makes.",
+  },
+];
 
-  const sectors = useMemo(
-    () => Array.from(new Set((projects ?? []).map((p) => p.sector))).sort(),
-    [projects]
-  );
-  const stages = useMemo(
-    () => Array.from(new Set((projects ?? []).map((p) => p.current_stage))).sort(),
-    [projects]
-  );
-  const locations = useMemo(
-    () => Array.from(new Set((projects ?? []).map((p) => p.location))).sort(),
-    [projects]
-  );
-
-  const filteredAndSorted = useMemo(() => {
-    if (!projects) return [];
-    let out = [...projects];
-    if (filterSector !== "all") out = out.filter((p) => p.sector === filterSector);
-    if (filterStage !== "all") out = out.filter((p) => p.current_stage === filterStage);
-    if (filterLocation !== "all") out = out.filter((p) => p.location === filterLocation);
-
-    if (sortBy === "risk") {
-      // Rank by the prediction the API returned, not a placeholder.
-      out.sort(
-        (a, b) =>
-          RISK_ORDER[b.prediction.risk_class] - RISK_ORDER[a.prediction.risk_class] ||
-          b.prediction.probability - a.prediction.probability
-      );
-    } else if (sortBy === "created_at") {
-      out.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-    } else if (sortBy === "name") {
-      out.sort((a, b) => a.name.localeCompare(b.name));
-    }
-    return out;
-  }, [projects, filterSector, filterStage, filterLocation, sortBy]);
-
-  if (error) {
-    return (
-      <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-sm text-red-700">
-        <p className="font-semibold">Failed to load projects</p>
-        <p className="mt-1">{error}</p>
-        <p className="mt-3 text-xs text-red-600">
-          Expected: <code>GET /projects</code> per technicaldesign.md §3. Check FastAPI is running or verify{" "}
-          <code>/mock-projects.json</code> exists.
-        </p>
-      </div>
-    );
-  }
-
-  if (projects === null) {
-    return (
-      <div className="space-y-4">
-        <div className="h-8 w-48 animate-pulse rounded bg-slate-200" />
-        <div className="h-64 animate-pulse rounded-xl bg-slate-100" />
-      </div>
-    );
-  }
-
+export default function LandingPage() {
   return (
-    <div className="space-y-6">
-      {/* Title row — Design Brief §3: ranked project list, risk badge, filters */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Risk Dashboard</h1>
-          <p className="mt-1 max-w-2xl text-sm text-slate-600">
-            Ranked list of acquisition projects with current risk level. Data is{" "}
-            <span className="font-medium text-amber-700">synthetic/demo</span> until the ingestion pipeline
-            provides validated records (PRD §8).
+    <main>
+      {/* ---------- Hero ---------- */}
+      <section className="lw-hero lw-grain relative overflow-hidden">
+        {/* ambient glow, drifting slowly behind everything */}
+        <div
+          className="lw-drift pointer-events-none absolute -left-40 top-0 h-[34rem] w-[34rem] rounded-full opacity-40 blur-3xl"
+          style={{ background: "radial-gradient(circle, rgba(45,212,191,.28), transparent 70%)" }}
+          aria-hidden
+        />
+        <div className="lw-grid absolute inset-0 opacity-60" aria-hidden />
+
+        <div className="relative mx-auto max-w-6xl px-6 pb-72 pt-20 sm:pt-28">
+          <p className="lw-rise lw-d1 font-mono text-[11px] uppercase tracking-[0.22em] text-amber-400/90">
+            SIH26017 · Ministry of Road Transport &amp; Highways
           </p>
-          {/* Provenance label — Design Brief §4: every AI view distinguishes demo vs ground truth */}
-          <p className="mt-2 inline-flex items-center gap-2 rounded bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800 ring-1 ring-amber-200">
-            <span className="h-2 w-2 rounded-full bg-amber-500" /> Source:{" "}
-            {source === "api" ? "Live API — GET /projects" : "Mock JSON — /mock-projects.json"} • Synthetic
-            demo data • Risk from a model trained on synthetic data
+
+          <h1 className="mt-6 max-w-3xl text-4xl font-bold leading-[1.06] tracking-tight text-white sm:text-6xl">
+            <span className="lw-rise lw-d2 block">Land acquisition delays</span>
+            <span className="lw-rise lw-d3 block">are visible long before</span>
+            <span className="lw-rise lw-d4 block">
+              they become <span className="text-amber-400">official</span>.
+            </span>
+          </h1>
+
+          <p className="lw-rise lw-d5 mt-7 max-w-xl text-lg leading-relaxed text-slate-300">
+            Existing systems record where a project stands today. LANDWATCH reads the same
+            process data and estimates where it is heading — early enough for an officer to
+            act, with the reasoning shown every time.
           </p>
+
+          <div className="lw-rise lw-d6 mt-9 flex flex-wrap items-center gap-3">
+            <Link
+              href="/dashboard"
+              className="rounded-md bg-amber-400 px-6 py-3 text-sm font-bold text-slate-900 shadow-lg shadow-amber-500/20 transition-all hover:-translate-y-0.5 hover:bg-amber-300"
+            >
+              Open the risk dashboard
+            </Link>
+            <Link
+              href="/projects/new"
+              className="rounded-md border border-slate-500/60 px-6 py-3 text-sm font-semibold text-slate-100 backdrop-blur transition-colors hover:border-slate-300 hover:bg-white/5"
+            >
+              Assess a site on the map
+            </Link>
+          </div>
         </div>
-        <div className="flex items-center gap-2 text-xs text-slate-500">
-          <span>{filteredAndSorted.length} projects</span>
-          <span className="h-3 w-px bg-slate-200" />
-          <a href="/mock-projects.json" target="_blank" className="underline hover:text-slate-700">
-            View mock JSON
-          </a>
+
+        {/* the corridor itself */}
+        <HighwayScene className="pointer-events-none absolute inset-x-0 bottom-0 h-72 w-full" />
+
+        {/* statutory sequence, riding along the road */}
+        <div className="relative mx-auto max-w-6xl px-6 pb-10">
+          <div className="flex flex-wrap items-center gap-x-1.5 gap-y-3">
+            <span className="mr-2 font-mono text-[10px] uppercase tracking-[0.18em] text-slate-400">
+              Tracked across
+            </span>
+            {STAGES.map((s, i) => (
+              <span key={s.code} className={`lw-fade lw-d${Math.min(i + 1, 6)} flex items-center gap-1.5`}>
+                <span
+                  className="rounded border border-white/10 bg-white/5 px-2 py-1 font-mono text-[11px] font-semibold text-slate-200 backdrop-blur"
+                  title={s.label}
+                >
+                  {s.code}
+                </span>
+                {i < STAGES.length - 1 && (
+                  <span className="text-slate-600" aria-hidden>
+                    →
+                  </span>
+                )}
+              </span>
+            ))}
+          </div>
         </div>
-      </div>
+      </section>
 
-      {/* Filters — Design Brief §3: quick filters (region, sector, stage) + sortable */}
-      <div className="flex flex-wrap gap-3 rounded-xl border bg-white p-4 shadow-sm">
-        <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
-          Sector
-          <select
-            value={filterSector}
-            onChange={(e) => setFilterSector(e.target.value)}
-            className="rounded border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-900"
-          >
-            <option value="all">All sectors</option>
-            {sectors.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
-          Stage (3A→3E)
-          <select
-            value={filterStage}
-            onChange={(e) => setFilterStage(e.target.value)}
-            className="rounded border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-900"
-          >
-            <option value="all">All stages</option>
-            {stages.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
-          Region / Location
-          <select
-            value={filterLocation}
-            onChange={(e) => setFilterLocation(e.target.value)}
-            className="rounded border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-900"
-          >
-            <option value="all">All locations</option>
-            {locations.map((l) => (
-              <option key={l} value={l}>
-                {l}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
-          Sort by
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-            className="rounded border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-900"
-          >
-            <option value="risk">Risk (Critical → Low)</option>
-            <option value="created_at">Newest</option>
-            <option value="name">Name (A→Z)</option>
-          </select>
-        </label>
-        {(filterSector !== "all" || filterStage !== "all" || filterLocation !== "all") && (
-          <button
-            onClick={() => {
-              setFilterSector("all");
-              setFilterStage("all");
-              setFilterLocation("all");
-            }}
-            className="self-end rounded bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-800"
-          >
-            Clear filters
-          </button>
-        )}
-      </div>
+      {/* ---------- The distinction ---------- */}
+      <section className="lw-paper border-y border-slate-200">
+        <div className="mx-auto max-w-6xl px-6 py-20">
+          <div className="grid gap-6 md:grid-cols-2">
+            <div className="rounded-xl border border-slate-200 bg-white/70 p-7 backdrop-blur">
+              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-slate-400">
+                A system of record answers
+              </p>
+              <p className="mt-4 text-2xl font-semibold tracking-tight text-slate-900">
+                &ldquo;Where is this project now?&rdquo;
+              </p>
+              <p className="mt-3 text-sm leading-relaxed text-slate-600">
+                Notifications issued, payments released, current stage. Accurate, necessary, and
+                entirely retrospective — by the time a delay appears here, it has already happened.
+              </p>
+            </div>
 
-      {/* Table / Cards */}
-      <ProjectTable projects={filteredAndSorted} />
+            <div className="relative overflow-hidden rounded-xl border-2 border-slate-900 bg-white p-7">
+              <span
+                className="absolute right-0 top-0 h-24 w-24 -translate-y-8 translate-x-8 rounded-full bg-amber-400/20 blur-2xl"
+                aria-hidden
+              />
+              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-amber-600">
+                LANDWATCH answers
+              </p>
+              <p className="mt-4 text-2xl font-semibold tracking-tight text-slate-900">
+                &ldquo;Which of these will slip, and why?&rdquo;
+              </p>
+              <p className="mt-3 text-sm leading-relaxed text-slate-600">
+                A ranked caseload, the factors behind every flag, an owned action for each, and a
+                simulator for testing an intervention before committing to it.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
 
-      {/* Footnote — explainability placeholder per PRD + Design Brief */}
-      <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-xs leading-relaxed text-slate-600">
-        <p className="font-semibold text-slate-700">What you see here</p>
-        <p className="mt-1">
-          This dashboard calls <code className="rounded bg-white px-1 py-0.5">GET /projects</code> as specified
-          in <code className="rounded bg-white px-1 py-0.5">technicaldesign.md §3</code>. Each row is a{" "}
-          <code className="rounded bg-white px-1 py-0.5">Project</code> per{" "}
-          <code className="rounded bg-white px-1 py-0.5">datamodel.md</code> (project_id, name, location, sector,
-          area, paf_count, current_stage, created_at). Risk badges come from{" "}
-          <code className="rounded bg-white px-1 py-0.5">GET /projects/&#123;id&#125;/predict</code>, served by a
-          logistic-regression model selected over Random Forest and XGBoost on recall for the delayed class
-          (AUC 0.907). Explanations are real SHAP values. The model is{" "}
-          <strong>trained on synthetic data</strong> — it demonstrates the pipeline end to end and says
-          nothing about real-world accuracy until a validated labelled dataset exists (PRD §8).
-        </p>
-      </div>
-    </div>
+      {/* ---------- Capabilities ---------- */}
+      <section className="relative overflow-hidden bg-[#0b1220]">
+        <div className="lw-grid absolute inset-0 opacity-40" aria-hidden />
+        <div className="relative mx-auto max-w-6xl px-6 py-20">
+          <h2 className="max-w-lg text-2xl font-bold tracking-tight text-white sm:text-3xl">
+            Four things it does, in the order an officer does them.
+          </h2>
+
+          <div className="mt-12 grid gap-x-10 gap-y-12 sm:grid-cols-2">
+            {CAPABILITIES.map((c) => (
+              <div key={c.n} className="border-t border-white/10 pt-5">
+                <span className={`font-mono text-xs font-bold ${c.accent}`}>{c.n}</span>
+                <h3 className="mt-3 text-lg font-semibold tracking-tight text-white">{c.title}</h3>
+                <p className="mt-2 max-w-sm text-sm leading-relaxed text-slate-400">{c.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ---------- Honest disclosure ---------- */}
+      <section className="relative overflow-hidden bg-slate-950">
+        <span
+          className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-400/60 to-transparent"
+          aria-hidden
+        />
+        <div className="mx-auto max-w-6xl px-6 py-16">
+          <h2 className="font-mono text-xs font-semibold uppercase tracking-[0.16em] text-amber-400">
+            What this prototype does not claim
+          </h2>
+
+          <div className="mt-8 grid gap-x-12 gap-y-7 sm:grid-cols-2">
+            {DISCLAIMERS.map((d) => (
+              <div key={d.head}>
+                <p className="text-sm font-semibold text-white">{d.head}</p>
+                <p className="mt-1.5 text-sm leading-relaxed text-slate-400">{d.body}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-12 border-t border-white/10 pt-7">
+            <Link
+              href="/dashboard"
+              className="group inline-flex items-center gap-2 text-sm font-semibold text-white"
+            >
+              See it working on the demo caseload
+              <span className="text-amber-400 transition-transform group-hover:translate-x-1" aria-hidden>
+                →
+              </span>
+            </Link>
+          </div>
+        </div>
+      </section>
+    </main>
   );
 }

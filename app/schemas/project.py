@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class RiskFactor(BaseModel):
@@ -11,12 +11,28 @@ class RiskFactor(BaseModel):
     explanation: str
 
 
+class Recommendation(BaseModel):
+    """Administrative action mapped from a measured condition. Not model output."""
+
+    id: str
+    action: str
+    detail: str
+    owner: str
+    severity: int
+    triggered_by: str
+
+
 class Prediction(BaseModel):
     risk_class: str
     probability: float
     factors: List[RiskFactor]
     model_version: str
     is_mock_prediction: bool
+    # Inputs the model had no data for — a neutral value was substituted, so the
+    # score is less certain than the number alone suggests.
+    missing_inputs: List[str] = []
+    # Deterministic rule output, not model output — see app/factor_config.py
+    recommendations: List[Recommendation] = []
 
 
 class StageHistoryOut(BaseModel):
@@ -67,6 +83,8 @@ class ProjectOut(BaseModel):
     area: Optional[float] = None
     paf_count: Optional[int] = None
     current_stage: str
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
     created_at: datetime
     prediction: Prediction
 
@@ -108,3 +126,84 @@ class FlagOut(BaseModel):
     note: Optional[str] = None
     status: str
     created_at: datetime
+
+
+# --- Write payloads -----------------------------------------------------------
+
+STAGES = ("3A", "3C", "3D", "3G", "3H", "3E")
+
+
+class ProjectCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=255)
+    location: str = Field(min_length=1, max_length=255)
+    sector: str = Field(default="National Highway", max_length=100)
+    area: Optional[float] = Field(default=None, ge=0)
+    paf_count: Optional[int] = Field(default=None, ge=0)
+    current_stage: str = Field(default="3A", pattern="^(3A|3C|3D|3G|3H|3E)$")
+    latitude: Optional[float] = Field(default=None, ge=-90, le=90)
+    longitude: Optional[float] = Field(default=None, ge=-180, le=180)
+
+
+class ProjectUpdate(BaseModel):
+    """Every field optional — only what is sent gets changed."""
+
+    name: Optional[str] = Field(default=None, min_length=1, max_length=255)
+    location: Optional[str] = Field(default=None, min_length=1, max_length=255)
+    sector: Optional[str] = Field(default=None, max_length=100)
+    area: Optional[float] = Field(default=None, ge=0)
+    paf_count: Optional[int] = Field(default=None, ge=0)
+    current_stage: Optional[str] = Field(default=None, pattern="^(3A|3C|3D|3G|3H|3E)$")
+    latitude: Optional[float] = Field(default=None, ge=-90, le=90)
+    longitude: Optional[float] = Field(default=None, ge=-180, le=180)
+
+
+class StageAdvance(BaseModel):
+    """Close the open stage and open the next one."""
+
+    stage: str = Field(pattern="^(3A|3C|3D|3G|3H|3E)$")
+    entered_at: Optional[datetime] = None
+
+
+class LitigationCreate(BaseModel):
+    status: str = Field(default="pending", pattern="^(pending|resolved|withdrawn)$")
+    type: Optional[str] = Field(default=None, max_length=100)
+    filed_at: Optional[datetime] = None
+
+
+class LitigationUpdate(BaseModel):
+    status: str = Field(pattern="^(pending|resolved|withdrawn)$")
+
+
+class CompensationCreate(BaseModel):
+    compensation_pct: float = Field(ge=0, le=100)
+
+
+class NewProjectScoreRequest(BaseModel):
+    """Score a project that does not exist yet (map view).
+
+    A project with no history has none of the model's strongest features, so the
+    officer supplies estimates. The response is explicitly an estimate for a project
+    WITH THESE CHARACTERISTICS, not a prediction about a real record.
+    """
+
+    location: str = Field(min_length=1, max_length=255)
+    latitude: Optional[float] = Field(default=None, ge=-90, le=90)
+    longitude: Optional[float] = Field(default=None, ge=-180, le=180)
+    sector: str = Field(default="National Highway", max_length=100)
+    current_stage: str = Field(default="3A", pattern="^(3A|3C|3D|3G|3H|3E)$")
+    # All of these are optional. Left blank, a typical value is assumed and named in
+    # `assumed_inputs`, so a location alone still returns something honest.
+    area: Optional[float] = Field(default=None, ge=0)
+    paf_count: Optional[int] = Field(default=None, ge=0)
+    days_in_current_stage: Optional[float] = Field(default=None, ge=0)
+    expected_litigations: Optional[float] = Field(default=None, ge=0)
+    planned_compensation_pct: Optional[float] = Field(default=None, ge=0, le=100)
+
+
+class NewProjectScoreResponse(BaseModel):
+    prediction: Prediction
+    inputs: dict
+    # Fields the officer left blank, for which a typical value was assumed.
+    assumed_inputs: List[str] = []
+    is_estimate: bool = True
+    disclaimer: str

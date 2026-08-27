@@ -14,19 +14,8 @@ ARTIFACT_PATH = os.getenv("MODEL_ARTIFACT", "ml/artifacts/model.joblib")
 STAGE_SEQUENCE = ["3A", "3C", "3D", "3G", "3H", "3E"]
 STAGE_EXPECTED_DAYS = {"3A": 60, "3C": 90, "3D": 120, "3G": 90, "3H": 60, "3E": 45}
 
-# Plain-language templates for the UI — Design Brief §3 asks for a one-liner per factor.
-FEATURE_PHRASES = {
-    "open_litigations": lambda v: f"{v:.0f} unresolved litigation case(s)",
-    "resolved_litigations": lambda v: f"{v:.0f} litigation case(s) already resolved",
-    "compensation_pct": lambda v: f"{v:.0f}% of compensation disbursed",
-    "days_in_current_stage": lambda v: f"{v:.0f} days in the current stage",
-    "stage_overrun_ratio": lambda v: f"Current stage is at {v:.1f}x its expected duration",
-    "prior_stage_avg_days": lambda v: f"Earlier stages averaged {v:.0f} days each",
-    "paf_count": lambda v: f"{v:.0f} project-affected families",
-    "area": lambda v: f"{v:.0f} hectares under acquisition",
-    "stage_index": lambda v: f"At stage {STAGE_SEQUENCE[int(v)] if 0 <= int(v) < 6 else '?'} of the sequence",
-    "current_stage": lambda v: "Current legal stage",
-}
+# Phrasing and recommendation rules live in one reviewable config (V2 contract, Gaps 2-3).
+from app.factor_config import phrase_for, recommend  # noqa: E402
 
 _artifact = None
 _load_attempted = False
@@ -52,7 +41,12 @@ def extract_features(project) -> dict:
 
     Must produce exactly the columns ml/train.py trained on.
     """
-    from app.risk import days_in_current_stage, latest_compensation_pct, open_litigation_count
+    from app.risk import (
+        NEUTRAL_COMPENSATION_PCT,
+        days_in_current_stage,
+        latest_compensation_pct,
+        open_litigation_count,
+    )
 
     stage = project.current_stage
     stage_index = STAGE_SEQUENCE.index(stage) if stage in STAGE_SEQUENCE else 0
@@ -71,7 +65,10 @@ def extract_features(project) -> dict:
         "resolved_litigations": float(
             sum(1 for lit in project.litigations if lit.status != "pending")
         ),
-        "compensation_pct": float(latest_compensation_pct(project)),
+        "compensation_pct": float(
+            NEUTRAL_COMPENSATION_PCT if latest_compensation_pct(project) is None
+            else latest_compensation_pct(project)
+        ),
         "days_in_current_stage": float(days),
         "prior_stage_avg_days": float(round(prior_avg, 1)),
         "stage_overrun_ratio": float(round(days / expected, 3)) if expected else 0.0,
@@ -127,25 +124,31 @@ def predict(project) -> dict:
 
     totals = _collapse_shap(values, artifact["feature_names_out"], features)
 
+    stage = project.current_stage
     factors = []
     for name, contribution in totals.items():
         raw = features.get(name, 0)
-        phrase = FEATURE_PHRASES.get(name)
+        numeric = float(raw) if isinstance(raw, (int, float)) else 0.0
         factors.append({
             "feature": name,
-            "value": float(raw) if isinstance(raw, (int, float)) else 0.0,
+            "value": numeric,
             "contribution": round(float(contribution), 4),
-            "explanation": phrase(float(raw)) if phrase and isinstance(raw, (int, float))
-            else f"{name.replace('_', ' ').capitalize()}: {raw}",
+            "explanation": phrase_for(name, numeric, stage),
         })
 
     # Rank by absolute impact, but keep the sign — SHAP factors can lower risk too.
     factors.sort(key=lambda f: abs(f["contribution"]), reverse=True)
 
+    from app.risk import missing_inputs
+
+    risk_class = _risk_class(probability)
+    top_factors = factors[:6]
     return {
-        "risk_class": _risk_class(probability),
+        "risk_class": risk_class,
         "probability": round(probability, 4),
-        "factors": factors[:6],
+        "factors": top_factors,
         "model_version": artifact["model_version"],
         "is_mock_prediction": False,
+        "missing_inputs": missing_inputs(project),
+        "recommendations": recommend(features, top_factors, risk_class),
     }

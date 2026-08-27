@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { FactorPanel } from "@/components/FactorPanel";
 import { FlagButton } from "@/components/FlagButton";
+import { RecommendationPanel } from "@/components/RecommendationPanel";
+import { RecordPanel } from "@/components/RecordPanel";
 import { RiskBadge } from "@/components/RiskBadge";
 import { StageTracker } from "@/components/StageTracker";
 import { WhatIfPanel } from "@/components/WhatIfPanel";
@@ -35,8 +37,8 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
 
   if (error) {
     return (
-      <div className="space-y-4">
-        <Link href="/" className="text-sm text-slate-600 underline hover:text-slate-900">
+      <main className="mx-auto max-w-6xl space-y-4 px-6 py-8">
+        <Link href="/dashboard" className="text-sm text-slate-600 underline hover:text-slate-900">
           ← Back to dashboard
         </Link>
         <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-sm text-red-700">
@@ -47,28 +49,28 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
             <code>uvicorn app.main:app --reload --port 8000</code>.
           </p>
         </div>
-      </div>
+      </main>
     );
   }
 
   if (!project) {
     return (
-      <div className="space-y-4">
+      <main className="mx-auto max-w-6xl space-y-4 px-6 py-8">
         <div className="h-5 w-32 animate-pulse rounded bg-slate-200" />
         <div className="h-24 animate-pulse rounded-xl bg-slate-100" />
         <div className="grid gap-5 lg:grid-cols-2">
           <div className="h-80 animate-pulse rounded-xl bg-slate-100" />
           <div className="h-80 animate-pulse rounded-xl bg-slate-100" />
         </div>
-      </div>
+      </main>
     );
   }
 
   const openLitigation = project.litigations.filter((l) => l.status === "pending");
 
   return (
-    <div className="space-y-5">
-      <Link href="/" className="inline-block text-sm text-slate-600 underline hover:text-slate-900">
+    <main className="mx-auto max-w-6xl space-y-5 px-6 py-8">
+      <Link href="/dashboard" className="inline-block text-sm text-slate-600 underline hover:text-slate-900">
         ← Back to dashboard
       </Link>
 
@@ -98,6 +100,12 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
           <div className="flex shrink-0 flex-col items-start gap-2 sm:items-end">
             <RiskBadge level={project.prediction.risk_class} probability={project.prediction.probability} />
             <span className="text-[11px] text-slate-400">{project.prediction.model_version}</span>
+            {project.prediction.missing_inputs?.length > 0 && (
+              <span className="rounded bg-slate-100 px-2 py-1 text-[11px] text-slate-600 ring-1 ring-slate-200">
+                No data yet for {project.prediction.missing_inputs.join(", ")} — a neutral value
+                was assumed, so treat this score as provisional.
+              </span>
+            )}
             <FlagButton projectId={project.project_id} prediction={project.prediction} />
           </div>
         </div>
@@ -107,7 +115,9 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
         <StageTracker history={project.stage_history} currentStage={project.current_stage} />
         <div className="space-y-5">
           <FactorPanel prediction={project.prediction} />
+          <RecommendationPanel recommendations={project.prediction.recommendations} />
           <WhatIfPanel projectId={project.project_id} baseline={project.current_features} />
+          <RecordPanel project={project} />
         </div>
       </div>
 
@@ -158,6 +168,6 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
           )}
         </div>
       </div>
-    </div>
+    </main>
   );
 }
