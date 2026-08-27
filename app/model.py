@@ -52,7 +52,12 @@ def extract_features(project) -> dict:
 
     Must produce exactly the columns ml/train.py trained on.
     """
-    from app.risk import days_in_current_stage, latest_compensation_pct, open_litigation_count
+    from app.risk import (
+        NEUTRAL_COMPENSATION_PCT,
+        days_in_current_stage,
+        latest_compensation_pct,
+        open_litigation_count,
+    )
 
     stage = project.current_stage
     stage_index = STAGE_SEQUENCE.index(stage) if stage in STAGE_SEQUENCE else 0
@@ -71,7 +76,10 @@ def extract_features(project) -> dict:
         "resolved_litigations": float(
             sum(1 for lit in project.litigations if lit.status != "pending")
         ),
-        "compensation_pct": float(latest_compensation_pct(project)),
+        "compensation_pct": float(
+            NEUTRAL_COMPENSATION_PCT if latest_compensation_pct(project) is None
+            else latest_compensation_pct(project)
+        ),
         "days_in_current_stage": float(days),
         "prior_stage_avg_days": float(round(prior_avg, 1)),
         "stage_overrun_ratio": float(round(days / expected, 3)) if expected else 0.0,
@@ -142,10 +150,13 @@ def predict(project) -> dict:
     # Rank by absolute impact, but keep the sign — SHAP factors can lower risk too.
     factors.sort(key=lambda f: abs(f["contribution"]), reverse=True)
 
+    from app.risk import missing_inputs
+
     return {
         "risk_class": _risk_class(probability),
         "probability": round(probability, 4),
         "factors": factors[:6],
         "model_version": artifact["model_version"],
         "is_mock_prediction": False,
+        "missing_inputs": missing_inputs(project),
     }

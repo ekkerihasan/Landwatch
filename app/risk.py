@@ -33,10 +33,16 @@ def days_in_current_stage(project) -> int:
     return max((datetime.now(timezone.utc) - open_stage.entered_at).days, 0)
 
 
-def latest_compensation_pct(project) -> float:
-    """Most recent compensation percentage, defaulting to 0 when none recorded."""
+# Median compensation in the training set. Used when a project has NO compensation
+# record at all — "not recorded yet" is not the same as "nothing disbursed", and
+# scoring absence as 0% makes every newly created project look Critical.
+NEUTRAL_COMPENSATION_PCT = 58.0
+
+
+def latest_compensation_pct(project):
+    """Most recent compensation percentage, or None when nothing is recorded."""
     if not project.compensation_records:
-        return 0.0
+        return None
     return max(project.compensation_records, key=lambda c: c.updated_at).compensation_pct
 
 
@@ -44,12 +50,23 @@ def open_litigation_count(project) -> int:
     return sum(1 for lit in project.litigations if lit.status == "pending")
 
 
+def missing_inputs(project) -> list:
+    """Inputs the model needs that this project has no data for."""
+    missing = []
+    if latest_compensation_pct(project) is None:
+        missing.append("compensation_pct")
+    if not project.stage_history:
+        missing.append("days_in_current_stage")
+    return missing
+
+
 def current_features(project) -> dict:
     """The feature vector as it stands today — the what-if baseline."""
+    compensation = latest_compensation_pct(project)
     return {
         "days_in_current_stage": days_in_current_stage(project),
         "open_litigations": open_litigation_count(project),
-        "compensation_pct": latest_compensation_pct(project),
+        "compensation_pct": NEUTRAL_COMPENSATION_PCT if compensation is None else compensation,
     }
 
 
@@ -104,6 +121,7 @@ def score_features(features: dict, stage: str) -> dict:
         "factors": factors,
         "model_version": MODEL_VERSION,
         "is_mock_prediction": True,
+        "missing_inputs": [],
     }
 
 

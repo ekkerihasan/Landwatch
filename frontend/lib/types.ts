@@ -19,6 +19,8 @@ export interface Prediction {
   factors: RiskFactor[];
   model_version: string;
   is_mock_prediction: boolean;
+  // Inputs the model had no data for — a neutral value was substituted.
+  missing_inputs: string[];
 }
 
 export interface Project {
@@ -29,6 +31,8 @@ export interface Project {
   area: number | null;
   paf_count: number | null;
   current_stage: AcquisitionStage | string;
+  latitude: number | null;
+  longitude: number | null;
   created_at: string; // ISO 8601
   prediction: Prediction;
 }
@@ -85,4 +89,22 @@ export interface Flag {
   note: string | null;
   status: string;
   created_at: string;
+}
+
+export interface NewProjectEstimate {
+  prediction: Prediction;
+  inputs: Record<string, unknown>;
+  is_estimate: boolean;
+  disclaimer: string;
+}
+
+export interface ProjectCreatePayload {
+  name: string;
+  location: string;
+  sector?: string;
+  area?: number | null;
+  paf_count?: number | null;
+  current_stage?: string;
+  latitude?: number | null;
+  longitude?: number | null;
 }

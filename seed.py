@@ -8,6 +8,8 @@ Usage:  .venv\Scripts\python.exe seed.py
 """
 from datetime import datetime, timedelta, timezone
 
+from sqlalchemy import text
+
 from app.database import SessionLocal
 from app.models import AcquisitionStageHistory, CompensationRecord, Litigation, Project
 
@@ -29,6 +31,8 @@ DEMO_PROJECTS = [
             area=142.5,
             paf_count=312,
             current_stage="3D",
+            latitude=21.1458,
+            longitude=79.0882,
             created_at=datetime(2024, 2, 15, 8, 30, tzinfo=timezone.utc),
         ),
         200,
@@ -44,6 +48,8 @@ DEMO_PROJECTS = [
             area=89.3,
             paf_count=187,
             current_stage="3A",
+            latitude=25.3176,
+            longitude=82.9739,
             created_at=datetime(2024, 6, 10, 10, 0, tzinfo=timezone.utc),
         ),
         25,
@@ -59,6 +65,8 @@ DEMO_PROJECTS = [
             area=210.0,
             paf_count=445,
             current_stage="3G",
+            latitude=21.1702,
+            longitude=72.8311,
             created_at=datetime(2023, 11, 3, 9, 15, tzinfo=timezone.utc),
         ),
         310,
@@ -79,6 +87,8 @@ DEMO_PROJECTS = [
             area=67.8,
             paf_count=98,
             current_stage="3C",
+            latitude=16.5062,
+            longitude=80.6480,
             created_at=datetime(2024, 8, 22, 7, 45, tzinfo=timezone.utc),
         ),
         70,
@@ -94,6 +104,8 @@ DEMO_PROJECTS = [
             area=155.2,
             paf_count=276,
             current_stage="3H",
+            latitude=26.7922,
+            longitude=82.1998,
             created_at=datetime(2023, 12, 18, 11, 20, tzinfo=timezone.utc),
         ),
         95,
@@ -166,10 +178,22 @@ def main() -> None:
             )
 
         db.commit()
+
+        # The rows above set project_id explicitly, and Postgres does not advance a
+        # SERIAL sequence for supplied ids. Without this reset the next real INSERT
+        # collides with an existing key and every "create project" fails.
+        db.execute(
+            text(
+                "SELECT setval(pg_get_serial_sequence('projects', 'project_id'), "
+                "COALESCE((SELECT MAX(project_id) FROM projects), 1))"
+            )
+        )
+        db.commit()
+
         print(f"Seeded {len(DEMO_PROJECTS)} synthetic projects.")
 
         # Show what the interim risk rule makes of them.
-        from app.risk import score_project
+        from app.risk import score_project_auto as score_project
 
         for project in db.query(Project).all():
             result = score_project(project)

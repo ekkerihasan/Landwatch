@@ -1,214 +1,175 @@
-"use client";
+import Link from "next/link";
 
-import { useEffect, useMemo, useState } from "react";
-import { ProjectTable } from "@/components/ProjectTable";
-import { RISK_ORDER } from "@/components/RiskBadge";
-import { fetchProjects } from "@/lib/api";
-import type { Project } from "@/lib/types";
+const STAGES = ["3A", "3C", "3D", "3G", "3H", "3E"];
 
-export default function RiskDashboard() {
-  const [projects, setProjects] = useState<Project[] | null>(null);
-  const [source, setSource] = useState<"api" | "mock" | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [filterSector, setFilterSector] = useState<string>("all");
-  const [filterStage, setFilterStage] = useState<string>("all");
-  const [filterLocation, setFilterLocation] = useState<string>("all");
-  const [sortBy, setSortBy] = useState<"risk" | "created_at" | "name">("risk");
-
-  useEffect(() => {
-    let cancelled = false;
-    // Calls GET /projects per technicaldesign.md §3 — with mock fallback
-    fetchProjects()
-      .then(({ projects, source }) => {
-        if (!cancelled) {
-          setProjects(projects);
-          setSource(source);
-        }
-      })
-      .catch((e) => {
-        if (!cancelled) setError(e instanceof Error ? e.message : String(e));
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const sectors = useMemo(
-    () => Array.from(new Set((projects ?? []).map((p) => p.sector))).sort(),
-    [projects]
-  );
-  const stages = useMemo(
-    () => Array.from(new Set((projects ?? []).map((p) => p.current_stage))).sort(),
-    [projects]
-  );
-  const locations = useMemo(
-    () => Array.from(new Set((projects ?? []).map((p) => p.location))).sort(),
-    [projects]
-  );
-
-  const filteredAndSorted = useMemo(() => {
-    if (!projects) return [];
-    let out = [...projects];
-    if (filterSector !== "all") out = out.filter((p) => p.sector === filterSector);
-    if (filterStage !== "all") out = out.filter((p) => p.current_stage === filterStage);
-    if (filterLocation !== "all") out = out.filter((p) => p.location === filterLocation);
-
-    if (sortBy === "risk") {
-      // Rank by the prediction the API returned, not a placeholder.
-      out.sort(
-        (a, b) =>
-          RISK_ORDER[b.prediction.risk_class] - RISK_ORDER[a.prediction.risk_class] ||
-          b.prediction.probability - a.prediction.probability
-      );
-    } else if (sortBy === "created_at") {
-      out.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-    } else if (sortBy === "name") {
-      out.sort((a, b) => a.name.localeCompare(b.name));
-    }
-    return out;
-  }, [projects, filterSector, filterStage, filterLocation, sortBy]);
-
-  if (error) {
-    return (
-      <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-sm text-red-700">
-        <p className="font-semibold">Failed to load projects</p>
-        <p className="mt-1">{error}</p>
-        <p className="mt-3 text-xs text-red-600">
-          Expected: <code>GET /projects</code> per technicaldesign.md §3. Check FastAPI is running or verify{" "}
-          <code>/mock-projects.json</code> exists.
-        </p>
-      </div>
-    );
-  }
-
-  if (projects === null) {
-    return (
-      <div className="space-y-4">
-        <div className="h-8 w-48 animate-pulse rounded bg-slate-200" />
-        <div className="h-64 animate-pulse rounded-xl bg-slate-100" />
-      </div>
-    );
-  }
-
+export default function LandingPage() {
   return (
-    <div className="space-y-6">
-      {/* Title row — Design Brief §3: ranked project list, risk badge, filters */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Risk Dashboard</h1>
-          <p className="mt-1 max-w-2xl text-sm text-slate-600">
-            Ranked list of acquisition projects with current risk level. Data is{" "}
-            <span className="font-medium text-amber-700">synthetic/demo</span> until the ingestion pipeline
-            provides validated records (PRD §8).
+    <main>
+      {/* Hero — the thesis: status tracking tells you where a project is, not where it's going */}
+      <section className="border-b border-slate-200 bg-white">
+        <div className="mx-auto max-w-6xl px-6 py-16 sm:py-24">
+          <p className="font-mono text-xs uppercase tracking-[0.18em] text-slate-500">
+            SIH26017 · Ministry of Road Transport &amp; Highways
           </p>
-          {/* Provenance label — Design Brief §4: every AI view distinguishes demo vs ground truth */}
-          <p className="mt-2 inline-flex items-center gap-2 rounded bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800 ring-1 ring-amber-200">
-            <span className="h-2 w-2 rounded-full bg-amber-500" /> Source:{" "}
-            {source === "api" ? "Live API — GET /projects" : "Mock JSON — /mock-projects.json"} • Synthetic
-            demo data • Risk from a model trained on synthetic data
+          <h1 className="mt-5 max-w-3xl text-balance text-4xl font-bold leading-[1.08] tracking-tight text-slate-900 sm:text-5xl">
+            Land acquisition delays are visible long before they are official.
+          </h1>
+          <p className="mt-5 max-w-2xl text-lg leading-relaxed text-slate-600">
+            Existing systems record where a project stands today. LANDWATCH reads the same
+            process data and estimates where it is heading — early enough for an officer to
+            act, with the reasoning shown every time.
           </p>
+
+          <div className="mt-8 flex flex-wrap items-center gap-3">
+            <Link
+              href="/dashboard"
+              className="rounded-md bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-slate-700"
+            >
+              Open the risk dashboard
+            </Link>
+            <Link
+              href="/projects/new"
+              className="rounded-md border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+            >
+              Assess a site before it starts
+            </Link>
+          </div>
+
+          {/* The statutory sequence, as a quiet piece of domain furniture */}
+          <div className="mt-14 flex flex-wrap items-center gap-x-2 gap-y-3 border-t border-slate-100 pt-8">
+            <span className="mr-2 text-xs font-medium uppercase tracking-wider text-slate-400">
+              Tracked across
+            </span>
+            {STAGES.map((stage, i) => (
+              <span key={stage} className="flex items-center gap-2">
+                <span className="rounded bg-slate-100 px-2 py-1 font-mono text-xs font-semibold text-slate-700">
+                  {stage}
+                </span>
+                {i < STAGES.length - 1 && (
+                  <span className="text-slate-300" aria-hidden>
+                    →
+                  </span>
+                )}
+              </span>
+            ))}
+          </div>
         </div>
-        <div className="flex items-center gap-2 text-xs text-slate-500">
-          <span>{filteredAndSorted.length} projects</span>
-          <span className="h-3 w-px bg-slate-200" />
-          <a href="/mock-projects.json" target="_blank" className="underline hover:text-slate-700">
-            View mock JSON
-          </a>
+      </section>
+
+      {/* The distinction that justifies the product */}
+      <section className="border-b border-slate-200 bg-slate-50">
+        <div className="mx-auto grid max-w-6xl gap-px overflow-hidden px-6 py-16 sm:py-20">
+          <div className="grid gap-6 md:grid-cols-2">
+            <div className="rounded-lg border border-slate-200 bg-white p-6">
+              <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-slate-400">
+                A system of record answers
+              </p>
+              <p className="mt-3 text-xl font-semibold tracking-tight text-slate-900">
+                &ldquo;Where is this project now?&rdquo;
+              </p>
+              <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                Notifications issued, payments released, current stage. Accurate, necessary, and
+                entirely retrospective — by the time a delay appears here, it has already happened.
+              </p>
+            </div>
+            <div className="rounded-lg border-2 border-slate-900 bg-white p-6">
+              <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-slate-500">
+                LANDWATCH answers
+              </p>
+              <p className="mt-3 text-xl font-semibold tracking-tight text-slate-900">
+                &ldquo;Which of these will slip, and why?&rdquo;
+              </p>
+              <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                A ranked caseload, the factors behind every flag, and a simulator for testing an
+                intervention before committing to it. It recommends; the officer decides.
+              </p>
+            </div>
+          </div>
         </div>
-      </div>
+      </section>
 
-      {/* Filters — Design Brief §3: quick filters (region, sector, stage) + sortable */}
-      <div className="flex flex-wrap gap-3 rounded-xl border bg-white p-4 shadow-sm">
-        <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
-          Sector
-          <select
-            value={filterSector}
-            onChange={(e) => setFilterSector(e.target.value)}
-            className="rounded border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-900"
-          >
-            <option value="all">All sectors</option>
-            {sectors.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
-          Stage (3A→3E)
-          <select
-            value={filterStage}
-            onChange={(e) => setFilterStage(e.target.value)}
-            className="rounded border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-900"
-          >
-            <option value="all">All stages</option>
-            {stages.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
-          Region / Location
-          <select
-            value={filterLocation}
-            onChange={(e) => setFilterLocation(e.target.value)}
-            className="rounded border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-900"
-          >
-            <option value="all">All locations</option>
-            {locations.map((l) => (
-              <option key={l} value={l}>
-                {l}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
-          Sort by
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-            className="rounded border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-900"
-          >
-            <option value="risk">Risk (Critical → Low)</option>
-            <option value="created_at">Newest</option>
-            <option value="name">Name (A→Z)</option>
-          </select>
-        </label>
-        {(filterSector !== "all" || filterStage !== "all" || filterLocation !== "all") && (
-          <button
-            onClick={() => {
-              setFilterSector("all");
-              setFilterStage("all");
-              setFilterLocation("all");
-            }}
-            className="self-end rounded bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-800"
-          >
-            Clear filters
-          </button>
-        )}
-      </div>
+      {/* Three capabilities */}
+      <section className="bg-white">
+        <div className="mx-auto max-w-6xl px-6 py-16 sm:py-20">
+          <div className="grid gap-10 md:grid-cols-3">
+            <div>
+              <div className="flex h-9 w-9 items-center justify-center rounded bg-slate-900 font-mono text-xs font-bold text-white">
+                01
+              </div>
+              <h2 className="mt-4 text-base font-semibold tracking-tight text-slate-900">
+                Rank the caseload
+              </h2>
+              <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                Every project scored Low to Critical, hardest-hit first, so limited attention goes
+                where it changes an outcome.
+              </p>
+            </div>
+            <div>
+              <div className="flex h-9 w-9 items-center justify-center rounded bg-slate-900 font-mono text-xs font-bold text-white">
+                02
+              </div>
+              <h2 className="mt-4 text-base font-semibold tracking-tight text-slate-900">
+                Show the reasoning
+              </h2>
+              <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                No risk score appears without the factors behind it — compensation stalled,
+                litigation open, a stage running past its statutory duration.
+              </p>
+            </div>
+            <div>
+              <div className="flex h-9 w-9 items-center justify-center rounded bg-slate-900 font-mono text-xs font-bold text-white">
+                03
+              </div>
+              <h2 className="mt-4 text-base font-semibold tracking-tight text-slate-900">
+                Test the intervention
+              </h2>
+              <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                Move compensation or clear a case in the simulator and watch the score respond,
+                before spending anything in the field.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
 
-      {/* Table / Cards */}
-      <ProjectTable projects={filteredAndSorted} />
+      {/* Honest disclosure — the thing that earns credibility rather than losing it */}
+      <section className="border-t border-slate-200 bg-slate-900">
+        <div className="mx-auto max-w-6xl px-6 py-14">
+          <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-400">
+            What this prototype does not claim
+          </h2>
+          <div className="mt-6 grid gap-x-10 gap-y-5 sm:grid-cols-2">
+            <p className="text-sm leading-relaxed text-slate-300">
+              <strong className="text-white">It is not validated on real data.</strong> Every
+              project here is synthetic, and the model is trained on synthetic data. That
+              demonstrates the pipeline works end to end — it is not evidence that the system
+              predicts real delays.
+            </p>
+            <p className="text-sm leading-relaxed text-slate-300">
+              <strong className="text-white">It does not prove cause.</strong> The factors behind a
+              score show what moved it, not what will fix it. Low compensation may be the cause of a
+              stall, or a symptom of the dispute causing it.
+            </p>
+            <p className="text-sm leading-relaxed text-slate-300">
+              <strong className="text-white">It does not predict dates.</strong> The output is a
+              risk band and a probability, never a completion date or an exact number of days late.
+            </p>
+            <p className="text-sm leading-relaxed text-slate-300">
+              <strong className="text-white">It does not act.</strong> No endpoint triggers anything
+              in the outside world. Every path ends in a decision a human officer makes.
+            </p>
+          </div>
 
-      {/* Footnote — explainability placeholder per PRD + Design Brief */}
-      <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-xs leading-relaxed text-slate-600">
-        <p className="font-semibold text-slate-700">What you see here</p>
-        <p className="mt-1">
-          This dashboard calls <code className="rounded bg-white px-1 py-0.5">GET /projects</code> as specified
-          in <code className="rounded bg-white px-1 py-0.5">technicaldesign.md §3</code>. Each row is a{" "}
-          <code className="rounded bg-white px-1 py-0.5">Project</code> per{" "}
-          <code className="rounded bg-white px-1 py-0.5">datamodel.md</code> (project_id, name, location, sector,
-          area, paf_count, current_stage, created_at). Risk badges come from{" "}
-          <code className="rounded bg-white px-1 py-0.5">GET /projects/&#123;id&#125;/predict</code>, served by a
-          logistic-regression model selected over Random Forest and XGBoost on recall for the delayed class
-          (AUC 0.907). Explanations are real SHAP values. The model is{" "}
-          <strong>trained on synthetic data</strong> — it demonstrates the pipeline end to end and says
-          nothing about real-world accuracy until a validated labelled dataset exists (PRD §8).
-        </p>
-      </div>
-    </div>
+          <div className="mt-10 border-t border-slate-700 pt-6">
+            <Link
+              href="/dashboard"
+              className="text-sm font-semibold text-white underline underline-offset-4 hover:text-slate-300"
+            >
+              See it working on the demo caseload →
+            </Link>
+          </div>
+        </div>
+      </section>
+    </main>
   );
 }

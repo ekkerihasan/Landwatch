@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
-from app.routers import admin_router, projects_router
+from app.routers import admin_router, crud_router, estimate_router, projects_router
 
 app = FastAPI(
     title=settings.app_name,
@@ -20,6 +20,8 @@ app.add_middleware(
 )
 
 app.include_router(projects_router)
+app.include_router(crud_router)
+app.include_router(estimate_router)
 app.include_router(admin_router)
 
 
